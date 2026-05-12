@@ -6,14 +6,12 @@ services:
     networks:
       - proxy-shared
 
-    # __IF VOLUME_MODE=bind
     volumes:
+    # __IF VOLUME_MODE=bind
       - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/db:/var/lib/mysql
     # __ELIF VOLUME_MODE=named_bind
-    volumes:
       - ${STACKNAME:-wordpress_d_www_example_com}_db_data:/var/lib/mysql
     # __ELIF VOLUME_MODE=managed
-    volumes:
       - ${STACKNAME:-wordpress_d_www_example_com}_db_data:/var/lib/mysql
     # __ENDIF
 
@@ -95,11 +93,11 @@ services:
     # __SETINVISIBLE LETSENCRYPT_METHOD=acme
     # __DISABLE VOLUME_MODE=managed
     # labels: []  
-    # Hinweis: Der Container ist nur intern erreichbar (z. B. per VPN oder LAN).
+    # Container is accessable only internally, e.g. by LAN or VPN.
     # __ENDIF
 
-# ===================== Volumes =====================
 # __IF VOLUME_MODE=named_bind
+# ===================== Volumes =====================
 volumes:
   ${STACKNAME:-wordpress_d_www_example_com}_db_data:
     driver: local
@@ -122,6 +120,7 @@ networks:
   proxy-shared:
     external: true
 # __ELIF EXTERNAL_ACCESS=false
+# Container is accessable only internally, e.g. by LAN or VPN.
 # networks:
 #   proxy-shared:
 #     external: true
