@@ -1,0 +1,22 @@
+#!/bin/bash
+# Odoo komplett löschen für !!CUSTOMERNAME!!
+
+set -euo pipefail
+
+CUSTOMER="!!CUSTOMERNAME!!"
+APPDOMAIN="!!APPDOMAIN!!"
+DATA_DIR="!!DATA_DIR!!"
+COMPOSE_DIR="!!COMPOSE_DIR!!"
+
+echo "⚠️  Lösche Odoo für ${CUSTOMER} (${APPDOMAIN}) inklusive ALLER Daten..."
+
+read -p "Wirklich löschen? (ja/nein) " -r
+if [[ ! $REPLY =~ ^[Jj]a$ ]]; then
+    echo "Abbruch."
+    exit 0
+fi
+
+rm -rf "$COMPOSE_DIR"
+rm -rf "$DATA_DIR"
+
+echo "✅ Odoo komplett gelöscht"

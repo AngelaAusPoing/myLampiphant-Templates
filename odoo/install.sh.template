@@ -1,0 +1,45 @@
+#!/bin/bash
+CUSTOMER="!!CUSTOMERNAME!!"
+APPDOMAIN="!!APPDOMAIN!!"
+DATA_DIR="!!DATA_DIR!!"
+COMPOSE_DIR="!!COMPOSE_DIR!!"
+
+POSTGRES_PASSWORD="!!POSTGRES_PASSWORD!!"
+
+echo "Installiere Odoo für ${CUSTOMER} (${APPDOMAIN})..."
+
+mkdir -p "$COMPOSE_DIR"
+mkdir -p "$DATA_DIR/postgres"
+mkdir -p "$DATA_DIR/odoo-data"
+mkdir -p "$DATA_DIR/addons"
+
+# Wichtig: Odoo-Container läuft mit UID 100, Gruppe 101 (odoo), daher müssen die Verzeichnisse entsprechend berechtigt sein
+chown -R 100:101 "$DATA_DIR/postgres"
+chown -R 100:101 "$DATA_DIR/odoo-data"
+chown -R 100:101 "$DATA_DIR/addons"
+# Erstelle das sessions-Verzeichnis direkt (verhindert Permission Error)
+mkdir -p "$DATA_DIR/odoo-data/sessions"
+chown -R 100:101 "$DATA_DIR/odoo-data/sessions"
+
+# Erstelle das Odoo-Init-Skript für den ersten Start
+cat > "$DATA_DIR/init-odoo.sh" <<'SH'
+#!/bin/sh
+set -e
+
+if [ ! -f /var/lib/odoo/.odoo_initialized ]; then
+  /entrypoint.sh odoo -d odoo -i base --without-demo=all --stop-after-init && touch /var/lib/odoo/.odoo_initialized
+fi
+
+exec /entrypoint.sh odoo
+SH
+chmod 750 "$DATA_DIR/init-odoo.sh"
+chown 100:101 "$DATA_DIR/init-odoo.sh"
+
+echo "✅ Installation abgeschlossen"
+echo "🌐 Odoo URL: https://${APPDOMAIN}"
+echo "📁 Daten: ${DATA_DIR}"
+echo "🐘 PostgreSQL Passwort: ${POSTGRES_PASSWORD}"
+echo ""
+echo "📝 Beim ersten Start: 1-2 Minuten warten (Datenbank-Initialisierung)"
+echo "   Master-Passwort: admin (beim ersten Login)"
+echo "   Hinweis: Der Odoo-Service führt beim ersten Start automatisch \"odoo -d odoo -i base --without-demo=all --stop-after-init\" aus."

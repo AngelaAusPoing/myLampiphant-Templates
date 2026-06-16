@@ -77,24 +77,38 @@ services:
         condition: service_healthy
 
     # ==================== Traefik Configuration ====================
-    # __IF EXTERNAL_ACCESS=true
     labels:
+      # Activate traefic
       - "traefik.enable=true"
-      - "traefik.http.routers.${STACKNAME}.rule=Host(`${APPDOMAIN}`)"
-      - "traefik.http.routers.${STACKNAME}.entrypoints=websecure"
-      - "traefik.http.services.${STACKNAME}.loadbalancer.server.port=80"
-      - "traefik.docker.network=proxy-shared"
-      # __IF LETSENCRYPT_METHOD=acme
-      - "traefik.http.routers.${STACKNAME}.tls.certresolver=letsencrypt"
-      # __ELIF LETSENCRYPT_METHOD=dns01
-      - "traefik.http.routers.${STACKNAME}.tls.certresolver=letsencrypt-dns"
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.rule=Host(`${APPDOMAIN}`)"
+      # __IF HTTP_REDIRECT=true
+      # Optional: HTTP → HTTPS Redirect (für den öffentlichen Host)
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}=web"
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}=redirect-to-https"
+      # __ELIF HTTP_REDIRECT=false
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.entrypoints=websecure"
       # __ENDIF
-    # __ELIF EXTERNAL_ACCESS=false
-    # __SETINVISIBLE LETSENCRYPT_METHOD=acme
-    # __DISABLE VOLUME_MODE=managed
-    # labels: []  
-    # Container is accessable only internally, e.g. by LAN or VPN.
-    # __ENDIF
+
+      # TLS + Let's Encrypt
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.tls=true"
+      # Use ACME or DNS01 to resolve SSL certificate?
+      # __IF LETSENCRYPT_METHOD=acme
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.tls.certresolver=letsencrypt"
+      # __ELIF LETSENCRYPT_METHOD=dns01
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.tls.certresolver=letsencrypt-dns"
+      # __ENDIF
+
+      # __IF EXTERNAL_ACCESS=true
+      - "traefik.http.services.${STACKNAME:-wordpress_d_www_example_com}.loadbalancer.server.port=80"
+      - "traefik.docker.network=proxy-shared"
+      # __ELIF EXTERNAL_ACCESS=false
+      # Limit IP access (only VPN and internal networks)
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.middlewares=iprestrict@file"   # or @docker, depending on setup
+      - "traefik.http.middlewares.iprestrict.ipallowlist.sourcerange=10.8.0.0/24,192.168.0.0/16,172.16.0.0/12,127.0.0.1/32"
+      # __SETINVISIBLE LETSENCRYPT_METHOD=acme
+      # __DISABLE VOLUME_MODE=managed
+      # __ENDIF
+      # Hier Grok-Infos zu Traefik / ACME usw.: https://x.com/i/grok/share/0f44fdb686ef4377a0b3abc4c6f8c9c9
 
 # __IF VOLUME_MODE=named_bind
 # ===================== Volumes =====================
