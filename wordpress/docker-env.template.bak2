@@ -1,0 +1,36 @@
+# === myLampiphant variables ===
+APPDOMAIN=!!APPDOMAIN!!
+CUSTOMERNAME=!!CUSTOMERNAME!!
+STACKNAME=!!STACKNAME!!
+
+# === Database ===
+DB_NAME=wordpress
+DB_USER=wpuser
+DB_ROOT_PASSWORD=!!DB_ROOT_PASSWORD!!
+DB_PASSWORD=!!DB_PASSWORD!!
+
+# === WordPress configuration ===
+TABLE_PREFIX=wp_
+
+# === WordPress Security Keys & Salts ===
+# You can generate them here: https://api.wordpress.org/secret-key/1.1/salt/
+# or run: openssl rand -base64 48 | tr -d /=+
+WP_AUTH_KEY=!!WP_AUTH_KEY!!
+WP_SECURE_AUTH_KEY=!!NEW_KEY!!
+WP_LOGGED_IN_KEY=!!NEW_KEY!!
+WP_NONCE_KEY=!!NEW_KEY!!
+WP_AUTH_SALT=!!NEW_KEY!!
+WP_SECURE_AUTH_SALT=!!NEW_KEY!!
+WP_LOGGED_IN_SALT=!!NEW_KEY!!
+WP_NONCE_SALT=!!NEW_KEY!!
+
+# === Debugging (false in Produktion!) ===
+WP_DEBUG=false
+
+# === Additional wp-config.php entries (optional) ===
+# example: WP_CONFIG_EXTRA="define('WP_MEMORY_LIMIT', '256M'); define('WP_ALLOW_MULTISITE', true);"
+WP_CONFIG_EXTRA=
+
+# === Optional: Charset & Collate ===
+WP_DB_CHARSET=utf8mb4
+WP_DB_COLLATE=

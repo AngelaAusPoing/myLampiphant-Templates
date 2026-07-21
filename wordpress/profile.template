@@ -1,0 +1,39 @@
+#!/bin/bash
+# Default variables for wordpress
+
+APPDOMAIN='!!APPDOMAIN!!'                     # Change to your app's domain name (e.g. app.example.com)
+
+VOLUME_MODE='!!VOLUME_MODE!!'                 # Change to your preferred volume mode (e.g. bind, named_bind, or volume)
+HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # Change to true or false depending on whether you want HTTP to HTTPS redirection
+LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # Change to acme or certbot depending on your preferred Let's Encrypt method
+EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # Change to true or false depending on whether you want external access to the app
+
+# Specific to wordpress
+TABLE_PREFIX='!!TABLE_PREFIX!!'               # Change to your preferred table prefix (e.g. wp_)
+WP_SECURITY_KEYS='!!WP_SECURITY_KEYS!!'       # Boolean value to indicate whether to generate WordPress security keys (true or false)
+
+
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$APPDOMAIN" ] || [ "$APPDOMAIN" = '!!APPDOMAIN!!' ]; then
+	APPDOMAIN=wordpress.${DOMAIN:-example.com}
+fi
+
+if [ -z "$VOLUME_MODE" ] || [ "$VOLUME_MODE" = '!!VOLUME_MODE!!' ]; then
+	VOLUME_MODE=bind
+fi
+if [ -z "$HTTP_REDIRECT" ] || [ "$HTTP_REDIRECT" = '!!HTTP_REDIRECT!!' ]; then
+	HTTP_REDIRECT=true
+fi
+if [ -z "$LETSENCRYPT_METHOD" ] || [ "$LETSENCRYPT_METHOD" = '!!LETSENCRYPT_METHOD!!' ]; then
+	LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$EXTERNAL_ACCESS" ] || [ "$EXTERNAL_ACCESS" = '!!EXTERNAL_ACCESS!!' ]; then
+	EXTERNAL_ACCESS=true
+fi
+
+if [ -z "$TABLE_PREFIX" ] || [ "$TABLE_PREFIX" = '!!TABLE_PREFIX!!' ]; then
+	TABLE_PREFIX=wp_
+fi
+if [ -z "$WP_SECURITY_KEYS" ] || [ "$WP_SECURITY_KEYS" = '!!WP_SECURITY_KEYS!!' ]; then
+	WP_SECURITY_KEYS=false
+fi

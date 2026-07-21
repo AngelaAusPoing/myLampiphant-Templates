@@ -1,0 +1,117 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    networks:
+      - proxy-shared
+      - odoo_!!CUSTOMERNAME!!
+    volumes:
+      # __IF VOLUME_MODE=bind
+      - !!DATA_DIR!!/postgres:/var/lib/postgresql/data
+      # __ELIF VOLUME_MODE=named_bind
+      - !!STACKNAME!!_postgres_data:/var/lib/postgresql/data
+      # __ELIF VOLUME_MODE=managed
+      - !!STACKNAME!!_postgres_data:/var/lib/postgresql/data
+      # __ENDIF
+    environment:
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=!!POSTGRES_PASSWORD!!
+      - POSTGRES_DB=!!ODOO_DB_NAME!!
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo -d !!ODOO_DB_NAME!!"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      restart_policy:
+        condition: any
+
+  odoo:
+    image: odoo:18.0
+    networks:
+      - proxy-shared
+      - odoo_!!CUSTOMERNAME!!
+    volumes:
+      # __IF VOLUME_MODE=bind
+      - !!DATA_DIR!!/odoo-data:/var/lib/odoo
+      - !!DATA_DIR!!/addons:/mnt/extra-addons
+      # __ELIF VOLUME_MODE=named_bind
+      - !!STACKNAME!!_odoo_data:/var/lib/odoo
+      - !!STACKNAME!!_addons_data:/mnt/extra-addons
+      # __ELIF VOLUME_MODE=managed
+      - !!STACKNAME!!_odoo_data:/var/lib/odoo
+      - !!STACKNAME!!_addons_data:/mnt/extra-addons
+      # __ENDIF
+      # __IF ODOO_DB_INIT=true
+      - !!DATA_DIR!!/init-odoo.sh:/usr/local/bin/init-odoo.sh:ro
+      # __ENDIF
+    environment:
+      - HOST=postgres
+      - USER=odoo
+      - PASSWORD=!!POSTGRES_PASSWORD!!
+      - PORT=5432
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=!!POSTGRES_PASSWORD!!
+      - POSTGRES_DB=!!ODOO_DB_NAME!!
+      - PROXY_MODE=!!ODOO_PROXY_MODE!!
+    # __IF ODOO_DB_INIT=true
+    command: ["/usr/local/bin/init-odoo.sh"]
+    # __ENDIF
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.!!CUSTOMERNAME!!-odoo.rule=Host(`!!ODOO_DOMAIN!!`)"
+      # __IF HTTP_REDIRECT=true
+      - "traefik.http.routers.!!CUSTOMERNAME!!-odoo.entrypoints=web"
+      - "traefik.http.routers.!!CUSTOMERNAME!!-odoo.middlewares=redirect-to-https@docker"
+      # __ELIF HTTP_REDIRECT=false
+      - "traefik.http.routers.!!CUSTOMERNAME!!-odoo.entrypoints=websecure"
+      # __ENDIF
+      - "traefik.http.routers.!!CUSTOMERNAME!!-odoo.tls=true"
+      # __IF LETSENCRYPT_METHOD=acme
+      - "traefik.http.routers.!!CUSTOMERNAME!!-odoo.tls.certresolver=letsencrypt"
+      # __ELIF LETSENCRYPT_METHOD=dns01
+      - "traefik.http.routers.!!CUSTOMERNAME!!-odoo.tls.certresolver=letsencrypt-dns"
+      # __ENDIF
+      # __IF EXTERNAL_ACCESS=true
+      - "traefik.http.services.!!CUSTOMERNAME!!-odoo.loadbalancer.server.port=8069"
+      - "traefik.docker.network=proxy-shared"
+      # __ELIF EXTERNAL_ACCESS=false
+      - "traefik.http.routers.!!CUSTOMERNAME!!-odoo.middlewares=iprestrict@file"
+      - "traefik.http.middlewares.iprestrict.ipallowlist.sourcerange=10.8.0.0/24,192.168.0.0/16,172.16.0.0/12,127.0.0.1/32"
+      # __ENDIF
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      restart_policy:
+        condition: any
+
+networks:
+  odoo_!!CUSTOMERNAME!!:
+    driver: overlay
+    attachable: true
+  proxy-shared:
+    external: true
+    name: proxy-shared
+# __IF VOLUME_MODE=named_bind
+volumes:
+  !!STACKNAME!!_postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: !!DATA_DIR!!/postgres
+
+  !!STACKNAME!!_odoo_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: !!DATA_DIR!!/odoo-data
+
+  !!STACKNAME!!_addons_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: !!DATA_DIR!!/addons
+# __ENDIF

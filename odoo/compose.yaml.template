@@ -6,13 +6,19 @@ services:
     networks:
       - proxy-shared
     volumes:
+      # __IF VOLUME_MODE=bind
       - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/postgres:/var/lib/postgresql/data
+      # __ELIF VOLUME_MODE=named_bind
+      - ${STACKNAME:-odoo_d_www_example_com}_postgres_data:/var/lib/postgresql/data
+      # __ELIF VOLUME_MODE=managed
+      - ${STACKNAME:-odoo_d_www_example_com}_postgres_data:/var/lib/postgresql/data
+      # __ENDIF
     environment:
       - POSTGRES_USER=odoo
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=odoo
+      - POSTGRES_DB=${ODOO_DB_NAME:-odoo}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U odoo -d odoo"]
+      test: ["CMD-SHELL", "pg_isready -U odoo -d ${ODOO_DB_NAME:-odoo}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,9 +31,19 @@ services:
     networks:
       - proxy-shared
     volumes:
+      # __IF VOLUME_MODE=bind
       - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/odoo-data:/var/lib/odoo
       - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/addons:/mnt/extra-addons
+      # __ELIF VOLUME_MODE=named_bind
+      - ${STACKNAME:-odoo_d_www_example_com}_odoo_data:/var/lib/odoo
+      - ${STACKNAME:-odoo_d_www_example_com}_addons_data:/mnt/extra-addons
+      # __ELIF VOLUME_MODE=managed
+      - ${STACKNAME:-odoo_d_www_example_com}_odoo_data:/var/lib/odoo
+      - ${STACKNAME:-odoo_d_www_example_com}_addons_data:/mnt/extra-addons
+      # __ENDIF
+      # __IF ODOO_DB_INIT=true
       - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/init-odoo.sh:/usr/local/bin/init-odoo.sh:ro
+      # __ENDIF
     environment:
       - HOST=postgres
       - USER=odoo
@@ -35,19 +51,60 @@ services:
       - POSTGRES_USER=odoo
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - PORT=5432
-      - PROXY_MODE=True
+      - POSTGRES_DB=${ODOO_DB_NAME:-odoo}
+      - PROXY_MODE=${ODOO_PROXY_MODE:-True}
+    # __IF ODOO_DB_INIT=true
     command: ["/usr/local/bin/init-odoo.sh"]
+    # __ENDIF
     depends_on:
       postgres:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${STACKNAME:-odoo_d_www_example_com}.rule=Host(`${APPDOMAIN}`)"
+      # __IF HTTP_REDIRECT=true
+      - "traefik.http.routers.${STACKNAME:-odoo_d_www_example_com}.entrypoints=web"
+      - "traefik.http.routers.${STACKNAME:-odoo_d_www_example_com}.middlewares=redirect-to-https@docker"
+      # __ELIF HTTP_REDIRECT=false
       - "traefik.http.routers.${STACKNAME:-odoo_d_www_example_com}.entrypoints=websecure"
+      # __ENDIF
+      - "traefik.http.routers.${STACKNAME:-odoo_d_www_example_com}.tls=true"
+      # __IF LETSENCRYPT_METHOD=acme
       - "traefik.http.routers.${STACKNAME:-odoo_d_www_example_com}.tls.certresolver=letsencrypt"
+      # __ELIF LETSENCRYPT_METHOD=dns01
+      - "traefik.http.routers.${STACKNAME:-odoo_d_www_example_com}.tls.certresolver=letsencrypt-dns"
+      # __ENDIF
+      # __IF EXTERNAL_ACCESS=true
       - "traefik.http.services.${STACKNAME:-odoo_d_www_example_com}.loadbalancer.server.port=8069"
       - "traefik.docker.network=proxy-shared"
+      # __ELIF EXTERNAL_ACCESS=false
+      - "traefik.http.routers.${STACKNAME:-odoo_d_www_example_com}.middlewares=iprestrict@file"
+      - "traefik.http.middlewares.iprestrict.ipallowlist.sourcerange=10.8.0.0/24,192.168.0.0/16,172.16.0.0/12,127.0.0.1/32"
+      # __ENDIF
 
 networks:
   proxy-shared:
     external: true
+# __IF VOLUME_MODE=named_bind
+volumes:
+  ${STACKNAME:-odoo_d_www_example_com}_postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/postgres
+
+  ${STACKNAME:-odoo_d_www_example_com}_odoo_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/odoo-data
+
+  ${STACKNAME:-odoo_d_www_example_com}_addons_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/addons
+# __ENDIF

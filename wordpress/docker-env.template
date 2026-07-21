@@ -13,9 +13,9 @@ DB_PASSWORD=!!DB_PASSWORD!!
 TABLE_PREFIX=wp_
 
 # ==================== Security Keys ====================
+{% if WP_SECURITY_KEYS == 'true' %}
 # You can generate them here: https://api.wordpress.org/secret-key/1.1/salt/
 # or run: openssl rand -base64 48 | tr -d /=+
-# __IF WP_SECURITY_KEYS=true
 WP_AUTH_KEY=!!WP_AUTH_KEY!!
 WP_SECURE_AUTH_KEY=!!NEW_KEY!!
 WP_LOGGED_IN_KEY=!!NEW_KEY!!
@@ -24,9 +24,9 @@ WP_AUTH_SALT=!!NEW_KEY!!
 WP_SECURE_AUTH_SALT=!!NEW_KEY!!
 WP_LOGGED_IN_SALT=!!NEW_KEY!!
 WP_NONCE_SALT=!!NEW_KEY!!
-# __ELIF WP_SECURITY_KEYS=false
+{% else %}
 # Security Keys werden von WordPress automatisch generiert (einfacher Modus)
-# __ENDIF
+{% endif %}
 
 # === Debugging (false in Produktion!) ===
 WP_DEBUG=false

@@ -1,0 +1,120 @@
+services:
+  db:
+    image: mariadb:10.11
+    container_name: ${STACKNAME:-wordpress_d_www_example_com}_db
+    restart: unless-stopped
+    networks:
+      - proxy-shared
+    # __IF VOLUME_MODE=bind
+    volumes:
+      - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/db:/var/lib/mysql
+    # __ELIF VOLUME_MODE=named_bind
+    volumes:
+      - ${STACKNAME:-wordpress_d_www_example_com}_db_data:/var/lib/mysql
+    # __ELIF VOLUME_MODE=managed
+    volumes:
+      - ${STACKNAME:-wordpress_d_www_example_com}_db_data:/var/lib/mysql
+    # __ENDIF
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME:-wordpress}
+      - MYSQL_USER=${DB_USER:-wpuser}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_CHARSET=utf8mb4      # Use UTF8MB4 to enable emoji and other modern character sets
+      - MYSQL_COLLATION=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s   # MariaDB needs a little time to initialize
+    deploy:
+      restart_policy:
+        condition: any
+
+  wordpress:
+    image: wordpress:latest
+    container_name: ${STACKNAME:-wordpress_d_www_example_com}
+    restart: unless-stopped
+    networks:
+      - proxy-shared
+    # __IF VOLUME_MODE=bind
+    volumes:
+      - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/wordpress:/var/www/html
+    # __ELIF VOLUME_MODE=named_bind
+    volumes:
+      - ${STACKNAME:-wordpress_d_www_example_com}_wp_data:/var/www/html
+    # __ELIF VOLUME_MODE=managed
+    volumes:
+      - ${STACKNAME:-wordpress_d_www_example_com}_wp_data:/var/www/html
+    # __ENDIF
+    environment:
+      - WORDPRESS_DB_HOST=db
+      - WORDPRESS_DB_NAME=${DB_NAME:-wordpress}
+      - WORDPRESS_DB_USER=${DB_USER:-wpuser}
+      - WORDPRESS_DB_PASSWORD=${DB_PASSWORD}
+      - WORDPRESS_TABLE_PREFIX=${TABLE_PREFIX:-wp_}
+
+      # Charset
+      - WORDPRESS_DB_CHARSET=${WP_DB_CHARSET:-utf8mb4}
+      - WORDPRESS_DB_COLLATE=${WP_DB_COLLATE:-}
+      
+      # Use in production environments 
+      - WORDPRESS_AUTH_KEY=${WP_AUTH_KEY}
+      - WORDPRESS_SECURE_AUTH_KEY=${WP_SECURE_AUTH_KEY}
+      - WORDPRESS_LOGGED_IN_KEY=${WP_LOGGED_IN_KEY}
+      - WORDPRESS_NONCE_KEY=${WP_NONCE_KEY}
+      - WORDPRESS_AUTH_SALT=${WP_AUTH_SALT}
+      - WORDPRESS_SECURE_AUTH_SALT=${WP_SECURE_AUTH_SALT}
+      - WORDPRESS_LOGGED_IN_SALT=${WP_LOGGED_IN_SALT}
+      - WORDPRESS_NONCE_SALT=${WP_NONCE_SALT}
+      
+      # Debugging & Development
+      - WORDPRESS_DEBUG=${WP_DEBUG:-false}
+      
+      # Additional configuration (very useful)
+      - WORDPRESS_CONFIG_EXTRA=${WP_CONFIG_EXTRA:-}
+      
+    depends_on:
+      db:
+        condition: service_healthy
+    # __IF EXTERNAL_ACCESS=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.rule=Host(`${APPDOMAIN:-www.example.com}`)"
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.entrypoints=websecure"
+      # __IF LETSENCRYPT_METHOD=acme
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.tls.certresolver=letsencrypt"
+      # __ELIF LETSENCRYPT_METHOD=dns01
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.tls.certresolver=letsencrypt-dns"
+      # __ENDIF
+      - "traefik.http.services.${STACKNAME:-wordpress_d_www_example_com}.loadbalancer.server.port=80"
+      - "traefik.docker.network=proxy-shared"
+    # __ELIF EXTERNAL_ACCESS=false
+    # Hint: this docker app can only be reached from LAN, not externally
+    # __ENDIF
+    deploy:
+      restart_policy:
+        condition: any
+
+# __IF VOLUME_MODE=named_bind
+volumes:
+  ${STACKNAME:-wordpress_d_www_example_com}_db_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/db
+  ${STACKNAME:-wordpress_d_www_example_com}_wp_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/wordpress
+# __ENDIF
+
+# __IF EXTERNAL_ACCESS=true
+networks:
+  proxy-shared:
+    external: true
+# __ENDIF

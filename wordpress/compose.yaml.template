@@ -7,13 +7,13 @@ services:
       - proxy-shared
 
     volumes:
-    # __IF VOLUME_MODE=bind
+    {%- if VOLUME_MODE == "bind" %}
       - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/db:/var/lib/mysql
-    # __ELIF VOLUME_MODE=named_bind
+    {%- elif VOLUME_MODE == "named_bind" %}
       - ${STACKNAME:-wordpress_d_www_example_com}_db_data:/var/lib/mysql
-    # __ELIF VOLUME_MODE=managed
+    {%- elif VOLUME_MODE == "managed" %}
       - ${STACKNAME:-wordpress_d_www_example_com}_db_data:/var/lib/mysql
-    # __ENDIF
+    {%- endif %}
 
     environment:
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
@@ -37,16 +37,16 @@ services:
     networks:
       - proxy-shared
 
-    # __IF VOLUME_MODE=bind
+    {%- if VOLUME_MODE == "bind" %}
     volumes:
       - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/wordpress:/var/www/html
-    # __ELIF VOLUME_MODE=named_bind
+    {%- elif VOLUME_MODE == "named_bind" %}
     volumes:
       - ${STACKNAME:-wordpress_d_www_example_com}_wp_data:/var/www/html
-    # __ELIF VOLUME_MODE=managed
+    {%- elif VOLUME_MODE == "managed" %}
     volumes:
       - ${STACKNAME:-wordpress_d_www_example_com}_wp_data:/var/www/html
-    # __ENDIF
+    {%- endif %}
 
     environment:
       - WORDPRESS_DB_HOST=db
@@ -59,7 +59,7 @@ services:
       - WORDPRESS_CONFIG_EXTRA=${WP_CONFIG_EXTRA:-}
 
       # ==================== Security Keys ====================
-      # __IF WP_SECURITY_KEYS=true
+      {%- if WP_SECURITY_KEYS == "true" %}
       - WORDPRESS_AUTH_KEY=${WP_AUTH_KEY}
       - WORDPRESS_SECURE_AUTH_KEY=${WP_SECURE_AUTH_KEY}
       - WORDPRESS_LOGGED_IN_KEY=${WP_LOGGED_IN_KEY}
@@ -68,9 +68,9 @@ services:
       - WORDPRESS_SECURE_AUTH_SALT=${WP_SECURE_AUTH_SALT}
       - WORDPRESS_LOGGED_IN_SALT=${WP_LOGGED_IN_SALT}
       - WORDPRESS_NONCE_SALT=${WP_NONCE_SALT}
-      # __ELIF WP_SECURITY_KEYS=false
+      {%- elif WP_SECURITY_KEYS == "false" %}
       # Security Keys werden von WordPress automatisch generiert (einfacher Modus)
-      # __ENDIF
+      {%- endif %}
 
     depends_on:
       db:
@@ -81,36 +81,34 @@ services:
       # Activate traefic
       - "traefik.enable=true"
       - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.rule=Host(`${APPDOMAIN}`)"
-      # __IF HTTP_REDIRECT=true
+      {%- if HTTP_REDIRECT == "true" %}
       # Optional: HTTP → HTTPS Redirect (für den öffentlichen Host)
       - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}=web"
       - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}=redirect-to-https"
-      # __ELIF HTTP_REDIRECT=false
+      {%- elif HTTP_REDIRECT == "false" %}
       - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.entrypoints=websecure"
-      # __ENDIF
+      {%- endif %}
 
       # TLS + Let's Encrypt
       - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.tls=true"
       # Use ACME or DNS01 to resolve SSL certificate?
-      # __IF LETSENCRYPT_METHOD=acme
+      {%- if LETSENCRYPT_METHOD == "acme" %}
       - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.tls.certresolver=letsencrypt"
-      # __ELIF LETSENCRYPT_METHOD=dns01
+      {%- elif LETSENCRYPT_METHOD == "dns01" %}
       - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.tls.certresolver=letsencrypt-dns"
-      # __ENDIF
+      {%- endif %}
 
-      # __IF EXTERNAL_ACCESS=true
+      {%- if EXTERNAL_ACCESS == "true" %}
       - "traefik.http.services.${STACKNAME:-wordpress_d_www_example_com}.loadbalancer.server.port=80"
       - "traefik.docker.network=proxy-shared"
-      # __ELIF EXTERNAL_ACCESS=false
+      {%- elif EXTERNAL_ACCESS == "false" %}
       # Limit IP access (only VPN and internal networks)
-      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.middlewares=iprestrict@file"   # or @docker, depending on setup
+      - "traefik.http.routers.${STACKNAME:-wordpress_d_www_example_com}.middlewares=iprestrict@file"
       - "traefik.http.middlewares.iprestrict.ipallowlist.sourcerange=10.8.0.0/24,192.168.0.0/16,172.16.0.0/12,127.0.0.1/32"
-      # __SETINVISIBLE LETSENCRYPT_METHOD=acme
-      # __DISABLE VOLUME_MODE=managed
-      # __ENDIF
+      {%- endif %}
       # Hier Grok-Infos zu Traefik / ACME usw.: https://x.com/i/grok/share/0f44fdb686ef4377a0b3abc4c6f8c9c9
 
-# __IF VOLUME_MODE=named_bind
+{%- if VOLUME_MODE == "named_bind" %}
 # ===================== Volumes =====================
 volumes:
   ${STACKNAME:-wordpress_d_www_example_com}_db_data:
@@ -126,16 +124,16 @@ volumes:
       type: none
       o: bind
       device: /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/wordpress
-# __ENDIF
+{%- endif %}
 
 # ===================== Networks =====================
-# __IF EXTERNAL_ACCESS=true
+{%- if EXTERNAL_ACCESS == "true" %}
 networks:
   proxy-shared:
     external: true
-# __ELIF EXTERNAL_ACCESS=false
+{%- elif EXTERNAL_ACCESS == "false" %}
 # Container is accessable only internally, e.g. by LAN or VPN.
 # networks:
 #   proxy-shared:
 #     external: true
-# __ENDIF
+{%- endif %}

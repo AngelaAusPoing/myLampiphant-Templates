@@ -26,11 +26,15 @@ cat > "$DATA_DIR/init-odoo.sh" <<'SH'
 #!/bin/sh
 set -e
 
+ODOO_DB_NAME="!!ODOO_DB_NAME!!"
+ODOO_WITHOUT_DEMO="!!ODOO_WITHOUT_DEMO!!"
+ODOO_EXTRA_ARGS="!!ODOO_EXTRA_ARGS!!"
+
 if [ ! -f /var/lib/odoo/.odoo_initialized ]; then
-  /entrypoint.sh odoo -d odoo -i base --without-demo=all --stop-after-init && touch /var/lib/odoo/.odoo_initialized
+  /entrypoint.sh odoo -d "$ODOO_DB_NAME" -i base --without-demo="$ODOO_WITHOUT_DEMO" --stop-after-init && touch /var/lib/odoo/.odoo_initialized
 fi
 
-exec /entrypoint.sh odoo
+exec /entrypoint.sh odoo $ODOO_EXTRA_ARGS
 SH
 chmod 750 "$DATA_DIR/init-odoo.sh"
 chown 100:101 "$DATA_DIR/init-odoo.sh"
@@ -42,4 +46,4 @@ echo "🐘 PostgreSQL Passwort: ${POSTGRES_PASSWORD}"
 echo ""
 echo "📝 Beim ersten Start: 1-2 Minuten warten (Datenbank-Initialisierung)"
 echo "   Master-Passwort: admin (beim ersten Login)"
-echo "   Hinweis: Der Odoo-Service führt beim ersten Start automatisch \"odoo -d odoo -i base --without-demo=all --stop-after-init\" aus."
+echo "   Hinweis: Der Odoo-Service führt beim ersten Start automatisch \"odoo -d ${ODOO_DB_NAME} -i base --without-demo=${ODOO_WITHOUT_DEMO} --stop-after-init\" aus."
