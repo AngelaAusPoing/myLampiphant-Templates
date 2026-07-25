@@ -8,7 +8,7 @@ services:
 
     volumes:
     {%- if VOLUME_MODE == "bind" %}
-      - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/db:/var/lib/mysql
+      - /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/db:/var/lib/mysql
     {%- elif VOLUME_MODE == "named_bind" %}
       - ${STACKNAME:-wordpress_d_www_example_com}_db_data:/var/lib/mysql
     {%- elif VOLUME_MODE == "managed" %}
@@ -39,7 +39,7 @@ services:
 
     {%- if VOLUME_MODE == "bind" %}
     volumes:
-      - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/wordpress:/var/www/html
+      - /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/wordpress:/var/www/html
     {%- elif VOLUME_MODE == "named_bind" %}
     volumes:
       - ${STACKNAME:-wordpress_d_www_example_com}_wp_data:/var/www/html
@@ -116,14 +116,14 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/db
+      device: /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/db
 
   ${STACKNAME:-wordpress_d_www_example_com}_wp_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/wordpress
+      device: /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-wordpress_d_www_example_com}/wordpress
 {%- endif %}
 
 # ===================== Networks =====================

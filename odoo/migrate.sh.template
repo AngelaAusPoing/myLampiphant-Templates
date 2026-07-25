@@ -1,9 +1,9 @@
 #!/bin/bash
-# Odoo Migration für !!CUSTOMERNAME!!
+# Odoo Migration für !!CUSTOMER!!
 
 set -euo pipefail
 
-CUSTOMER="!!CUSTOMERNAME!!"
+CUSTOMER="!!CUSTOMER!!"
 APPDOMAIN="!!APPDOMAIN!!"
 DATA_DIR="!!DATA_DIR!!"
 

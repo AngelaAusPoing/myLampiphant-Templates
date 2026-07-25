@@ -1,9 +1,9 @@
 #!/bin/bash
-# Odoo komplett löschen für !!CUSTOMERNAME!!
+# Odoo komplett löschen für !!CUSTOMER!!
 
 set -euo pipefail
 
-CUSTOMER="!!CUSTOMERNAME!!"
+CUSTOMER="!!CUSTOMER!!"
 APPDOMAIN="!!APPDOMAIN!!"
 DATA_DIR="!!DATA_DIR!!"
 COMPOSE_DIR="!!COMPOSE_DIR!!"

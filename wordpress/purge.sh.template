@@ -1,9 +1,9 @@
 #!/bin/bash
-# WordPress komplett löschen für !!CUSTOMERNAME!!
+# WordPress komplett löschen für !!CUSTOMER!!
 
 set -euo pipefail
 
-CUSTOMER="!!CUSTOMERNAME!!"
+CUSTOMER="!!CUSTOMER!!"
 APPDOMAIN="!!APPDOMAIN!!"
 DATA_DIR="!!DATA_DIR!!"
 CONFIG_DIR="!!CONFIG_DIR!!"

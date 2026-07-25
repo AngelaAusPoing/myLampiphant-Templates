@@ -1,11 +1,11 @@
 #!/bin/bash
-CUSTOMER="!!CUSTOMERNAME!!" # Dein Name (Punkte durch Unterstriche), z.B. julian_snowden
-APPDOMAIN="!!APPDOMAIN!!" # Domain für WordPress, z.B. www.example.com
-DATA_DIR="!!DATA_DIR!!" # Pfad zu persistenten Daten
-COMPOSE_DIR="!!COMPOSE_DIR!!" # Pfad zur Docker-Compose-Konfiguration
+CUSTOMER="!!CUSTOMER!!" # Name of the customer, e.g. julian_snowden
+APPDOMAIN="!!APPDOMAIN!!" # Domain for WordPress, e.g. www.example.com
+DATA_DIR="!!DATA_DIR!!" # Path to persistent data, e.g. /opt/docker-data/julian_snowden/wordpress
+COMPOSE_DIR="!!COMPOSE_DIR!!" # Path to Docker-Compose configuration, e.g. /opt/docker/julian_snowden/wordpress
 
-DB_PASSWORD="!!DB_PASSWORD!!" # Selbst gewähltes Passwort für die Datenbank
-DB_ROOT_PASSWORD="!!DB_ROOT_PASSWORD!!" # Selbst gewähltes Root-Passwort
+DB_PASSWORD="!!DB_PASSWORD!!" # Self-chosen password for the database
+DB_ROOT_PASSWORD="!!DB_ROOT_PASSWORD!!" # Self-chosen root password for the database
 
 echo "Installiere WordPress für ${CUSTOMER} (${APPDOMAIN})..."
 

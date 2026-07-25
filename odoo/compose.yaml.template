@@ -7,7 +7,7 @@ services:
       - proxy-shared
     volumes:
       # __IF VOLUME_MODE=bind
-      - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/postgres:/var/lib/postgresql/data
+      - /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/postgres:/var/lib/postgresql/data
       # __ELIF VOLUME_MODE=named_bind
       - ${STACKNAME:-odoo_d_www_example_com}_postgres_data:/var/lib/postgresql/data
       # __ELIF VOLUME_MODE=managed
@@ -32,8 +32,8 @@ services:
       - proxy-shared
     volumes:
       # __IF VOLUME_MODE=bind
-      - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/odoo-data:/var/lib/odoo
-      - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/addons:/mnt/extra-addons
+      - /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/odoo-data:/var/lib/odoo
+      - /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/addons:/mnt/extra-addons
       # __ELIF VOLUME_MODE=named_bind
       - ${STACKNAME:-odoo_d_www_example_com}_odoo_data:/var/lib/odoo
       - ${STACKNAME:-odoo_d_www_example_com}_addons_data:/mnt/extra-addons
@@ -42,7 +42,7 @@ services:
       - ${STACKNAME:-odoo_d_www_example_com}_addons_data:/mnt/extra-addons
       # __ENDIF
       # __IF ODOO_DB_INIT=true
-      - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/init-odoo.sh:/usr/local/bin/init-odoo.sh:ro
+      - /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/init-odoo.sh:/usr/local/bin/init-odoo.sh:ro
       # __ENDIF
     environment:
       - HOST=postgres
@@ -92,19 +92,19 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/postgres
+      device: /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/postgres
 
   ${STACKNAME:-odoo_d_www_example_com}_odoo_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/odoo-data
+      device: /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/odoo-data
 
   ${STACKNAME:-odoo_d_www_example_com}_addons_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/addons
+      device: /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-odoo_d_www_example_com}/addons
 # __ENDIF

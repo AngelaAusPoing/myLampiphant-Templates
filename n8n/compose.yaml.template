@@ -6,7 +6,7 @@ services:
     networks:
       - proxy-shared
     volumes:
-      - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-n8n_c_example_com}/postgres:/var/lib/postgresql/data
+      - /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-n8n_c_example_com}/postgres:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=n8n
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -27,7 +27,7 @@ services:
     networks:
       - proxy-shared
     volumes:
-      - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-n8n_c_example_com}/n8n:/home/node/.n8n
+      - /opt/docker-data/${CUSTOMER:-customer_directory}/${STACKNAME:-n8n_c_example_com}/n8n:/home/node/.n8n
     environment:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=admin

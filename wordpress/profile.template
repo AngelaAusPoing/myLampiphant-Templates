@@ -1,18 +1,22 @@
 #!/bin/bash
 # Default variables for wordpress
 
+# Global environment variables that are used in the app's templates
 APPDOMAIN='!!APPDOMAIN!!'                     # Change to your app's domain name (e.g. app.example.com)
 
+# Global environment variables that are specific to the app and are used in the app's templates
+TABLE_PREFIX='!!TABLE_PREFIX!!'               # Change to your preferred table prefix (e.g. wp_)
+
+# Global Jinja2 variables that are used in the app's templates
 VOLUME_MODE='!!VOLUME_MODE!!'                 # Change to your preferred volume mode (e.g. bind, named_bind, or volume)
 HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # Change to true or false depending on whether you want HTTP to HTTPS redirection
 LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # Change to acme or certbot depending on your preferred Let's Encrypt method
 EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # Change to true or false depending on whether you want external access to the app
 
-# Specific to wordpress
-TABLE_PREFIX='!!TABLE_PREFIX!!'               # Change to your preferred table prefix (e.g. wp_)
+# Global Jinja2 variables that are specific to the app and are used in the app's templates
 WP_SECURITY_KEYS='!!WP_SECURITY_KEYS!!'       # Boolean value to indicate whether to generate WordPress security keys (true or false)
 
-
+# ------------------------------------------------------------------------------------------------
 # Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
 if [ -z "$APPDOMAIN" ] || [ "$APPDOMAIN" = '!!APPDOMAIN!!' ]; then
 	APPDOMAIN=wordpress.${DOMAIN:-example.com}

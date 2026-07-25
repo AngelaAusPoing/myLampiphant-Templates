@@ -1,6 +1,6 @@
 # === myLampiphant variables ===
 APPDOMAIN=!!APPDOMAIN!!
-CUSTOMERNAME=!!CUSTOMERNAME!!
+CUSTOMER=!!CUSTOMER!!
 STACKNAME=!!STACKNAME!!
 
 # === PostgreSQL ===

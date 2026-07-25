@@ -1,19 +1,19 @@
 # === myLampiphant variables ===
 APPDOMAIN=!!APPDOMAIN!!
-CUSTOMERNAME=!!CUSTOMERNAME!!
+CUSTOMER=!!CUSTOMER!!
 STACKNAME=!!STACKNAME!!
 
 # === Database ===
 DB_NAME=wordpress
 DB_USER=wpuser
-DB_ROOT_PASSWORD=!!DB_ROOT_PASSWORD!!
-DB_PASSWORD=!!DB_PASSWORD!!
+DB_ROOT_PASSWORD=!!NEW_PASSWORD!!
+DB_PASSWORD=!!NEW_PASSWORD!!
 
 # === WordPress configuration ===
 TABLE_PREFIX=wp_
 
 # ==================== Security Keys ====================
-{% if WP_SECURITY_KEYS == 'true' %}
+{%- if WP_SECURITY_KEYS == "true" %}
 # You can generate them here: https://api.wordpress.org/secret-key/1.1/salt/
 # or run: openssl rand -base64 48 | tr -d /=+
 WP_AUTH_KEY=!!WP_AUTH_KEY!!
