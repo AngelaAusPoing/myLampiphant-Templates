@@ -1,0 +1,87 @@
+#!/bin/bash
+# Default variables for the app "wireguard" (wg-easy, one stack per customer)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (0-1 stacks per customer):
+#   app.sh wireguard add <customer>
+#   app.sh wireguard add <customer> --var WG_PORT=51821 --var WG_SUBNET_INDEX=2
+#
+# The stack is named wireguard_c_<customer>. The WireGuard UDP port is published
+# on the host. The web UI is bound to 127.0.0.1 only (SSH tunnel, later Authelia).
+# Traefik and port 443 are not involved.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='wireguard'
+SPRW__APP_PREFIX='WG'
+
+# Global
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'
+
+# App-specific variables (SPRW_WG_*)
+SPRW_WG_IMAGE='!!WG_IMAGE!!'                 # pinned 15.x tag, arm64-verified
+SPRW_WG_PORT='!!WG_PORT!!'                   # host/container UDP listen port
+SPRW_WG_UI_PORT='!!WG_UI_PORT!!'             # host TCP port, bound to 127.0.0.1
+SPRW_WG_MEM_LIMIT='!!WG_MEM_LIMIT!!'         # compose mem_limit (e.g. 384m)
+SPRW_WG_ENDPOINT='!!WG_ENDPOINT!!'           # public host clients connect to (IP or name)
+SPRW_WG_SUBNET_INDEX='!!WG_SUBNET_INDEX!!'   # <n> in 10.50.<n>.0/24; auto-allocated if empty
+SPRW_WG_IPV4_CIDR='!!WG_IPV4_CIDR!!'         # WireGuard client subnet, e.g. 10.50.1.0/24
+SPRW_WG_IPV6_CIDR='!!WG_IPV6_CIDR!!'         # ULA used at init, e.g. fd50:1::/64
+SPRW_WG_DNS='!!WG_DNS!!'                     # comma-separated resolvers for clients
+SPRW_WG_DISABLE_IPV6='!!WG_DISABLE_IPV6!!'   # true/false (default true)
+SPRW_WG_UI_USERNAME='!!WG_UI_USERNAME!!'     # wg-easy admin user
+SPRW_WG_UI_PASSWORD="!!NEW_PASSWORD!!"       # generated once, host-only
+SPRW_WG_TIMEZONE='!!TIMEZONE!!'
+SPRW_WG_ALLOWED_IPS='!!WG_ALLOWED_IPS!!'     # split-tunnel defaults; set at install if empty
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, change the values above instead (defaults for empty values).
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=false
+fi
+if [ -z "$SPRW_WG_IMAGE" ] || [[ "$SPRW_WG_IMAGE" == *'!!'* ]]; then
+	SPRW_WG_IMAGE=ghcr.io/wg-easy/wg-easy:15.5.0
+fi
+if [ -z "$SPRW_WG_PORT" ] || [[ "$SPRW_WG_PORT" == *'!!'* ]]; then
+	SPRW_WG_PORT=51820
+fi
+if [ -z "$SPRW_WG_UI_PORT" ] || [[ "$SPRW_WG_UI_PORT" == *'!!'* ]]; then
+	SPRW_WG_UI_PORT=18081
+fi
+if [ -z "$SPRW_WG_MEM_LIMIT" ] || [[ "$SPRW_WG_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_WG_MEM_LIMIT=384m
+fi
+if [ -z "$SPRW_WG_DNS" ] || [[ "$SPRW_WG_DNS" == *'!!'* ]]; then
+	SPRW_WG_DNS='1.1.1.1,9.9.9.9'
+fi
+if [ -z "$SPRW_WG_DISABLE_IPV6" ] || [[ "$SPRW_WG_DISABLE_IPV6" == *'!!'* ]]; then
+	SPRW_WG_DISABLE_IPV6=true
+fi
+if [ -z "$SPRW_WG_UI_USERNAME" ] || [[ "$SPRW_WG_UI_USERNAME" == *'!!'* ]]; then
+	SPRW_WG_UI_USERNAME=admin
+fi
+if [ -z "$SPRW_WG_TIMEZONE" ] || [[ "$SPRW_WG_TIMEZONE" == *'!!'* ]]; then
+	SPRW_WG_TIMEZONE=Europe/Berlin
+fi
+
+# ------------------------------------------------------------------------------------------------
+# Bridge for app.sh: placeholders are resolved by their bare name.
+WG_IMAGE=$SPRW_WG_IMAGE
+WG_PORT=$SPRW_WG_PORT
+WG_UI_PORT=$SPRW_WG_UI_PORT
+WG_MEM_LIMIT=$SPRW_WG_MEM_LIMIT
+WG_ENDPOINT=$SPRW_WG_ENDPOINT
+WG_SUBNET_INDEX=$SPRW_WG_SUBNET_INDEX
+WG_IPV4_CIDR=$SPRW_WG_IPV4_CIDR
+WG_IPV6_CIDR=$SPRW_WG_IPV6_CIDR
+WG_DNS=$SPRW_WG_DNS
+WG_DISABLE_IPV6=$SPRW_WG_DISABLE_IPV6
+WG_UI_USERNAME=$SPRW_WG_UI_USERNAME
+TIMEZONE=$SPRW_WG_TIMEZONE
+WG_ALLOWED_IPS=$SPRW_WG_ALLOWED_IPS

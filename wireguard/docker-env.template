@@ -1,0 +1,10 @@
+# === myLampiphant variables ===
+# This file is sent to Komodo. No passwords, keys or tokens belong here.
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# === wireguard (non-secret) ===
+SPRW_WG_PORT=!!WG_PORT!!
+SPRW_WG_UI_PORT=!!WG_UI_PORT!!
+SPRW_WG_IPV4_CIDR=!!WG_IPV4_CIDR!!
+SPRW_WG_ENDPOINT=!!WG_ENDPOINT!!

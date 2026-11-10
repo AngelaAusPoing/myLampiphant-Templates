@@ -1,0 +1,209 @@
+#!/bin/bash
+# wgadmin.sh - helper for the WireGuard / wg-easy stack
+# Generated from _templates_/wireguard/wgadmin.sh.template
+# Secrets are never printed. Client configs are only written to files you name.
+set -euo pipefail
+
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__STACKNAME="!!STACKNAME!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW_WG_UI_PORT="!!WG_UI_PORT!!"
+SPRW_WG_UI_USERNAME="!!WG_UI_USERNAME!!"
+CONFIG_FILE="$(dirname "$SPRW__DATA_DIR")/_config_/${SPRW__STACKNAME}.env"
+API="http://127.0.0.1:${SPRW_WG_UI_PORT}"
+
+usage() {
+    cat <<USAGE
+Usage: wgadmin.sh <command> [args]
+
+  finalize-init              After the first successful start, drop INIT_*
+                             (including the UI password) from the container env file.
+  add-client <name>          Create a peer (no-op if a client with that name exists).
+  export-client <name> <dir> Write <name>.conf and <name>.png into <dir> (chmod 600).
+  list                       List client names and ids (no keys).
+  status                     Show container / interface / listen port (no secrets).
+
+The UI is bound to 127.0.0.1:${SPRW_WG_UI_PORT}. Open a tunnel first if you call
+the API from another machine:
+  ssh -N -L ${SPRW_WG_UI_PORT}:127.0.0.1:${SPRW_WG_UI_PORT} USER@HOST
+USAGE
+}
+
+read_cfg() {
+    grep -E "^$1=" "$CONFIG_FILE" | head -1 | cut -d= -f2- \
+        | sed -E -e "s/^'([^']*)'.*\$/\\1/" -e 's/^"([^"]*)".*$/\1/' -e 's/[[:space:]]+#.*$//' -e 's/[[:space:]]+$//'
+}
+
+ui_password() {
+    local pw
+    pw="$(read_cfg SPRW_WG_UI_PASSWORD)"
+    if [ -z "$pw" ] || [[ "$pw" == *'!!'* ]]; then
+        echo "ERROR: UI password missing in ${CONFIG_FILE}" >&2
+        return 1
+    fi
+    printf '%s' "$pw"
+}
+
+# curl wrapper: auth via netrc-like process substitution, never put the password on the argv that ps can show easily.
+# We still need --user. Keep the password in a file descriptor via a temp netrc.
+api_curl() {
+    local pw netrc
+    pw="$(ui_password)"
+    netrc="$(mktemp)"
+    umask 077
+    printf 'machine 127.0.0.1 login %s password %s\n' "$SPRW_WG_UI_USERNAME" "$pw" > "$netrc"
+    unset pw
+    # -sS, write body to stdout; caller redirects. Do not use -v.
+    curl -sS --netrc-file "$netrc" "$@"
+    local rc=$?
+    rm -f "$netrc"
+    return $rc
+}
+
+cmd_finalize_init() {
+    local envf="$SPRW__DATA_DIR/secrets/wg-easy.env"
+    if [ ! -f "$envf" ]; then
+        echo "ERROR: ${envf} not found" >&2
+        exit 1
+    fi
+    if ! grep -q '^INIT_ENABLED=' "$envf"; then
+        echo "Init variables already removed from the env file."
+        return 0
+    fi
+    umask 077
+    local tmp
+    tmp="$(mktemp)"
+    # Keep only non-INIT lines if any; otherwise write a short comment.
+    grep -vE '^INIT_' "$envf" > "$tmp" || true
+    if [ ! -s "$tmp" ]; then
+        echo "# INIT_* removed after first start. Remaining settings come from the compose environment." > "$tmp"
+    fi
+    cat "$tmp" > "$envf"
+    rm -f "$tmp"
+    chmod 600 "$envf"
+    echo "Removed INIT_* from ${envf}. A container recreate is not required; the next recreate will no longer pass the UI password into the environment."
+}
+
+cmd_list() {
+    # Response is JSON; print only id and name
+    local body
+    body="$(api_curl "${API}/api/client")"
+    if ! echo "$body" | jq -e . >/dev/null 2>&1; then
+        echo "ERROR: API did not return JSON. Is the UI up on 127.0.0.1:${SPRW_WG_UI_PORT}?" >&2
+        exit 1
+    fi
+    echo "$body" | jq -r '
+        if type=="array" then .[]
+        elif .clients then .clients[]
+        else empty end
+        | "\(.id // .clientId)\t\(.name)"
+    '
+}
+
+find_client_id() {
+    local name="$1"
+    local body id
+    body="$(api_curl "${API}/api/client")"
+    id="$(echo "$body" | jq -r --arg n "$name" '
+        (if type=="array" then . elif .clients then .clients else [] end)
+        | map(select(.name == $n))
+        | .[0].id // .[0].clientId // empty
+    ')"
+    printf '%s' "$id"
+}
+
+cmd_add_client() {
+    local name="${1:-}"
+    if [ -z "$name" ]; then
+        echo "ERROR: usage: wgadmin.sh add-client <name>" >&2
+        exit 1
+    fi
+    local existing
+    existing="$(find_client_id "$name" || true)"
+    if [ -n "$existing" ]; then
+        echo "Client ${name} already exists (id ${existing})."
+        return 0
+    fi
+    local body
+    body="$(api_curl -X POST "${API}/api/client" \
+        -H 'Content-Type: application/json' \
+        -d "{\"name\":\"${name}\",\"expiresAt\":null}")"
+    if ! echo "$body" | jq -e '.success == true or .clientId != null or .id != null' >/dev/null 2>&1; then
+        echo "ERROR: failed to create client ${name} (API rejected the request; response not printed)." >&2
+        exit 1
+    fi
+    local id
+    id="$(echo "$body" | jq -r '.clientId // .id')"
+    echo "Created client ${name} (id ${id})."
+}
+
+cmd_export_client() {
+    local name="${1:-}"
+    local dest="${2:-}"
+    if [ -z "$name" ] || [ -z "$dest" ]; then
+        echo "ERROR: usage: wgadmin.sh export-client <name> <dir>" >&2
+        exit 1
+    fi
+    mkdir -p "$dest"
+    chmod 700 "$dest"
+    local id
+    id="$(find_client_id "$name" || true)"
+    if [ -z "$id" ]; then
+        echo "ERROR: no client named ${name}" >&2
+        exit 1
+    fi
+    local conf png
+    conf="${dest}/${name}.conf"
+    png="${dest}/${name}.png"
+    umask 077
+    # Write the config directly to a file; never echo it.
+    if ! api_curl "${API}/api/client/${id}/configuration" -o "$conf"; then
+        echo "ERROR: could not download configuration for ${name}" >&2
+        rm -f "$conf"
+        exit 1
+    fi
+    if [ ! -s "$conf" ]; then
+        echo "ERROR: configuration download was empty" >&2
+        rm -f "$conf"
+        exit 1
+    fi
+    # Basic sanity: a WireGuard config starts with [Interface]; do not print the file.
+    if ! grep -q '^\[Interface\]' "$conf"; then
+        echo "ERROR: downloaded file does not look like a WireGuard config (not printed)." >&2
+        rm -f "$conf"
+        exit 1
+    fi
+    chmod 600 "$conf"
+    if command -v qrencode >/dev/null 2>&1; then
+        qrencode -o "$png" -t PNG -r "$conf"
+        chmod 600 "$png"
+    else
+        echo "WARNING: qrencode is not installed; wrote only ${name}.conf. Install qrencode to also get a PNG." >&2
+    fi
+    echo "Wrote ${name}.conf and (if qrencode is present) ${name}.png under ${dest} (chmod 600). Contents not printed."
+}
+
+cmd_status() {
+    echo "stack: ${SPRW__STACKNAME}"
+    echo "customer: ${SPRW__CUSTOMER}"
+    echo "data: ${SPRW__DATA_DIR}"
+    echo "ui: 127.0.0.1:${SPRW_WG_UI_PORT}"
+    if docker inspect "$SPRW__STACKNAME" >/dev/null 2>&1; then
+        docker inspect "$SPRW__STACKNAME" | jq -r '"container: " + .[0].State.Status + " health=" + (.[0].State.Health.Status // "n/a")'
+        docker exec "$SPRW__STACKNAME" sh -c 'wg show interfaces 2>/dev/null; echo "---"; wg show all listen-port 2>/dev/null | sed "s/=.*/= (port shown)/"; ip -brief link show wg0 2>/dev/null || true'
+    else
+        echo "container: not found"
+    fi
+}
+
+cmd="${1:-}"
+shift || true
+case "$cmd" in
+    finalize-init) cmd_finalize_init "$@" ;;
+    add-client)    cmd_add_client "$@" ;;
+    export-client) cmd_export_client "$@" ;;
+    list)          cmd_list "$@" ;;
+    status)        cmd_status "$@" ;;
+    -h|--help|help|"") usage ;;
+    *) echo "ERROR: unknown command ${cmd}" >&2; usage; exit 1 ;;
+esac
