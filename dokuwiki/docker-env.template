@@ -1,0 +1,12 @@
+# === myLampiphant variables ===
+# This file is sent to Komodo. No passwords, keys or tokens belong here.
+APPDOMAIN=!!APPDOMAIN!!
+CUSTOMER=!!CUSTOMER!!
+STACKNAME=!!STACKNAME!!
+
+# === dokuwiki (non-secret) ===
+DOKUWIKI_IMAGE=lscr.io/linuxserver/dokuwiki:latest
+DOKUWIKI_MEM_LIMIT=256m
+PUID=1000
+PGID=1000
+TIMEZONE=Europe/Berlin

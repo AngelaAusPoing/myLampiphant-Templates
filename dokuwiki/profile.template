@@ -1,0 +1,43 @@
+#!/bin/bash
+# Default variables for the app "dokuwiki"
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (several stacks per customer, one per domain — same instance type as wordpress):
+#   app.sh dokuwiki add <customer> <domain>
+#   example: app.sh dokuwiki add lapha_de wiki.example.com
+#
+# The stack is named dokuwiki_d_<domain_normalized>.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='dokuwiki'
+SPRW__APP_PREFIX='DOKUWIKI'
+
+# Global (customer/domain-specific values are !!PLACEHOLDER!!, filled by app.sh)
+SPRW__APPDOMAIN='!!APPDOMAIN!!'
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'
+
+# App-specific defaults (not customer-specific; override here or with --var)
+SPRW_DOKUWIKI_IMAGE='lscr.io/linuxserver/dokuwiki:latest'
+SPRW_DOKUWIKI_MEM_LIMIT='256m'
+SPRW_DOKUWIKI_PUID='1000'
+SPRW_DOKUWIKI_PGID='1000'
+SPRW_DOKUWIKI_TIMEZONE='Europe/Berlin'
+
+# ------------------------------------------------------------------------------------------------
+# Bridge for app.sh: placeholders are resolved by their bare name.
+DOKUWIKI_IMAGE="$SPRW_DOKUWIKI_IMAGE"
+DOKUWIKI_MEM_LIMIT="$SPRW_DOKUWIKI_MEM_LIMIT"
+PUID="$SPRW_DOKUWIKI_PUID"
+PGID="$SPRW_DOKUWIKI_PGID"
+TIMEZONE="$SPRW_DOKUWIKI_TIMEZONE"
+APPDOMAIN="$SPRW__APPDOMAIN"
+VOLUME_MODE="$SPRW__VOLUME_MODE"
+HTTP_REDIRECT="$SPRW__HTTP_REDIRECT"
+LETSENCRYPT_METHOD="$SPRW__LETSENCRYPT_METHOD"
+EXTERNAL_ACCESS="$SPRW__EXTERNAL_ACCESS"

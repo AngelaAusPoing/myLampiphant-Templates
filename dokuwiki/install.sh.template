@@ -1,0 +1,22 @@
+#!/bin/bash
+# Prepare host directories for DokuWiki. No secrets are set or printed here.
+# After the stack is up, complete the DokuWiki installer in the browser
+# (create the admin account there). Do not pass a password on this script.
+CUSTOMER="!!CUSTOMER!!"
+APPDOMAIN="!!APPDOMAIN!!"
+DATA_DIR="!!DATA_DIR!!"
+COMPOSE_DIR="!!COMPOSE_DIR!!"
+PUID="1000"
+PGID="1000"
+
+echo "Installing DokuWiki for ${CUSTOMER} (${APPDOMAIN})..."
+
+mkdir -p "$COMPOSE_DIR"
+mkdir -p "$DATA_DIR/config"
+# linuxserver runs as PUID:PGID (default 1000:1000); also applied at container start.
+chown -R 1000:1000 "$DATA_DIR/config"
+
+echo "Installation files prepared."
+echo "URL: https://${APPDOMAIN}"
+echo "Data: ${DATA_DIR}"
+echo "Open the URL and finish the DokuWiki installer in the browser to create the admin account."
