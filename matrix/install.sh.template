@@ -66,6 +66,7 @@ mkdir -p "$DATA_DIR/wellknown/www/.well-known/matrix"
 
 # Official PostgreSQL Alpine runs as uid 70; official Synapse as uid 991.
 chown -R 70:70 "$DATA_DIR/postgres"
+chown -R 991:991 "$DATA_DIR/synapse"
 
 # ------------------------------------------------------------------
 # homeserver.yaml and signing keys: generate once, never overwrite.
