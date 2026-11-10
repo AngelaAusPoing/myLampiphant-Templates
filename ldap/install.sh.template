@@ -132,5 +132,5 @@ fi
 
 echo "✅ Host preparation done for ${SPRW__STACKNAME}"
 echo "📁 Data: ${SPRW__DATA_DIR}"
-echo "📝 After the stack is running: run ldapadmin.sh add-customer <customer>"
+echo "📝 After the stack is running: run ldapadmin.sh add-customer <customer> (and add-group / add-member for groupOfNames groups)"
 echo "🔒 LAM listens on 127.0.0.1:${SPRW_LDAP_LAM_PORT} (SSH tunnel, not Traefik)"

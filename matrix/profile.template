@@ -26,6 +26,13 @@ SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTP
 SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
 SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
 
+# Homer dashboard tile: link to the Element UI, not the apex well-known host
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Element'
+SPRW__HOMER_ICON='fas fa-comments'
+SPRW__HOMER_GROUP='Apps'
+SPRW__HOMER_URL='https://chat.${APPDOMAIN}'
+
 # Images and memory limits (ARM64-verified pins; override in persistent config)
 SPRW_MATRIX_SYNAPSE_IMAGE='matrixdotorg/synapse:v1.164.2'
 SPRW_MATRIX_ELEMENT_IMAGE='vectorim/element-web:v1.12.33'
@@ -59,3 +66,16 @@ fi
 if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [ "$SPRW__EXTERNAL_ACCESS" = '!!EXTERNAL_ACCESS!!' ]; then
 	SPRW__EXTERNAL_ACCESS=true
 fi
+if [ -z "$SPRW__HOMER_LINK" ] || [ "$SPRW__HOMER_LINK" = '!!HOMER_LINK!!' ]; then
+	SPRW__HOMER_LINK=true
+fi
+if [ -z "$SPRW__HOMER_URL" ] || [[ "$SPRW__HOMER_URL" == *'!!'* ]]; then
+	SPRW__HOMER_URL="https://chat.${SPRW__APPDOMAIN}"
+fi
+
+# Bridge for app.sh
+HOMER_LINK="$SPRW__HOMER_LINK"
+HOMER_NAME="$SPRW__HOMER_NAME"
+HOMER_ICON="$SPRW__HOMER_ICON"
+HOMER_GROUP="$SPRW__HOMER_GROUP"
+HOMER_URL="$SPRW__HOMER_URL"

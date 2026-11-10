@@ -8,9 +8,18 @@
 #   ldapadmin.sh add-user <customer> <uid> [email]
 #   ldapadmin.sh set-password <customer> <uid>
 #   ldapadmin.sh add-alias <customer> <alias-address> <target-mailbox>
+#   ldapadmin.sh add-group <group> --org <o> [--member <uid>...]
+#   ldapadmin.sh add-member <group> [--org <o>] --member <uid>...
+#   ldapadmin.sh remove-member <group> [--org <o>] --member <uid>...
+#   ldapadmin.sh list-groups [--org <o>]
 #   ldapadmin.sh list [customer]
 #   ldapadmin.sh export [file]               LDIF dump of the whole tree (or one customer)
 #   ldapadmin.sh import-ldif <file>          ldapadd -c (continue on exist)
+#
+# Groups are groupOfNames with member DNs (uid=<uid>,ou=people,o=<org>,<BASE_DN>),
+# matching DokuWiki authldap (groupfilter member=%{dn}). --customer is an alias for --org.
+# add-group requires at least one --member when creating a new group (member is MUST).
+# All group commands are idempotent: existing entries and memberships are left in place.
 set -euo pipefail
 
 CONTAINER="!!STACKNAME!!"
@@ -18,6 +27,11 @@ DATA_DIR="!!DATA_DIR!!"
 CONFIG_FILE="$(dirname "$DATA_DIR")/_config_/${CONTAINER}.env"
 BASE_DN="!!LDAP_BASE_DN!!"
 ROOT_DN="!!LDAP_ROOT_DN!!"
+
+usage() {
+    sed -n '6,22p' "$0" >&2
+    exit 1
+}
 
 read_cfg() {
     grep -E "^$1=" "$CONFIG_FILE" | head -1 | cut -d= -f2- \
@@ -47,20 +61,31 @@ clear_bind_pw() {
     docker exec "$CONTAINER" rm -f /tmp/.ldap-admin-pw >/dev/null 2>&1 || true
 }
 with_bind() {
-    # usage: with_bind ldapadd|ldapmodify|ldapsearch|ldappasswd -- extra args
+    # usage: with_bind [--stdin] ldapadd|ldapmodify|ldapsearch|ldappasswd -- extra args
+    # --stdin (docker exec -i) only when the caller provides LDIF or similar on stdin.
+    # ldapsearch/ldappasswd must not steal the caller's stdin (scripts, pipes, bash -s).
+    local use_stdin=0
+    if [ "${1:-}" = "--stdin" ]; then
+        use_stdin=1
+        shift
+    fi
     install_bind_pw
     set +e
-    docker exec -i "$CONTAINER" "$@"
+    if [ "$use_stdin" -eq 1 ]; then
+        docker exec -i "$CONTAINER" "$@"
+    else
+        docker exec "$CONTAINER" "$@"
+    fi
     local st=$?
     set -e
     clear_bind_pw
     return $st
 }
 
-ldap_add()    { with_bind ldapadd    -x -H ldapi:/// -D "$ROOT_DN" -y /tmp/.ldap-admin-pw "$@"; }
-ldap_modify() { with_bind ldapmodify -x -H ldapi:/// -D "$ROOT_DN" -y /tmp/.ldap-admin-pw "$@"; }
-ldap_search() { with_bind ldapsearch -x -H ldapi:/// -D "$ROOT_DN" -y /tmp/.ldap-admin-pw -LLL -o ldif-wrap=no "$@"; }
-ldap_passwd() { with_bind ldappasswd -x -H ldapi:/// -D "$ROOT_DN" -y /tmp/.ldap-admin-pw "$@"; }
+ldap_add()    { with_bind --stdin ldapadd    -x -H ldapi:/// -D "$ROOT_DN" -y /tmp/.ldap-admin-pw "$@"; }
+ldap_modify() { with_bind --stdin ldapmodify -x -H ldapi:/// -D "$ROOT_DN" -y /tmp/.ldap-admin-pw "$@"; }
+ldap_search() { with_bind         ldapsearch -x -H ldapi:/// -D "$ROOT_DN" -y /tmp/.ldap-admin-pw -LLL -o ldif-wrap=no "$@"; }
+ldap_passwd() { with_bind         ldappasswd -x -H ldapi:/// -D "$ROOT_DN" -y /tmp/.ldap-admin-pw "$@"; }
 
 ldif_escape() {
     # Escape a value for unsafe LDIF (leading space, colon, < or non-ascii -> base64)
@@ -73,8 +98,184 @@ else:
 ' "$1"
 }
 
+ldap_dn_escape() {
+    # Escape an RDN attribute value (RFC 4514).
+    python3 - "$1" <<'PY'
+import sys
+v = sys.argv[1]
+out = []
+for i, c in enumerate(v):
+    if c == "\x00":
+        out.append("\\00")
+    elif c in ',+"\\<>;' or (i == 0 and c in " #") or (i == len(v) - 1 and c == " "):
+        out.append("\\" + c)
+    else:
+        out.append(c)
+print("".join(out))
+PY
+}
+
+ldap_filter_escape() {
+    python3 - "$1" <<'PY'
+import sys
+v = sys.argv[1]
+out = []
+for c in v:
+    o = ord(c)
+    if c in "\\*()" or o == 0:
+        out.append("\\%02x" % o)
+    else:
+        out.append(c)
+print("".join(out))
+PY
+}
+
 customer_dn() {
-    echo "o=$1,${BASE_DN}"
+    echo "o=$(ldap_dn_escape "$1"),${BASE_DN}"
+}
+
+group_dn() {
+    local group="$1" org="$2"
+    echo "cn=$(ldap_dn_escape "$group"),ou=groups,$(customer_dn "$org")"
+}
+
+user_dn() {
+    local uid="$1" org="$2"
+    echo "uid=$(ldap_dn_escape "$uid"),ou=people,$(customer_dn "$org")"
+}
+
+entry_exists() {
+    ldap_search -b "$1" -s base '(objectClass=*)' dn >/dev/null 2>&1
+}
+
+is_member() {
+    local gdn="$1" mdn="$2"
+    local filt out
+    filt="(member=$(ldap_filter_escape "$mdn"))"
+    out=$(ldap_search -b "$gdn" -s base "$filt" dn 2>/dev/null || true)
+    echo "$out" | grep -q '^dn:'
+}
+
+member_count() {
+    local gdn="$1"
+    ldap_search -b "$gdn" -s base '(objectClass=*)' member \
+        | grep -c -E '^member:' || true
+}
+
+warn_if_locked() {
+    local udn="$1" uid="$2"
+    local info
+    info=$(ldap_search -b "$udn" -s base '(objectClass=*)' pwdAccountLockedTime description pwdReset 2>/dev/null || true)
+    if echo "$info" | grep -q '^pwdAccountLockedTime:'; then
+        echo "NOTE: user ${uid} has pwdAccountLockedTime set (ppolicy lockout). Membership was still recorded." >&2
+    fi
+    if echo "$info" | grep -qi '^description:.*lock'; then
+        local desc
+        desc=$(echo "$info" | grep -i '^description:' | sed 's/^description:[[:space:]]*//')
+        echo "NOTE: user ${uid} directory description: ${desc}" >&2
+    fi
+    if echo "$info" | grep -qi '^pwdReset:[[:space:]]*TRUE'; then
+        echo "NOTE: user ${uid} has pwdReset=TRUE (must change password)." >&2
+    fi
+}
+
+# Parses --org/--customer and --member flags. Remaining words go to POSITIONAL.
+# --member may be followed by one or more uids, until the next flag.
+parse_org_member_args() {
+    ORG=""
+    MEMBERS=()
+    POSITIONAL=()
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --org|--customer)
+                [ $# -ge 2 ] || { echo "ERROR: $1 requires an argument" >&2; exit 1; }
+                ORG="$2"
+                shift 2
+                ;;
+            --org=*|--customer=*)
+                ORG="${1#*=}"
+                shift
+                ;;
+            --member)
+                shift
+                if [ $# -eq 0 ] || [[ "$1" == --* ]]; then
+                    echo "ERROR: --member requires at least one uid" >&2
+                    exit 1
+                fi
+                while [ $# -gt 0 ] && [[ "$1" != --* ]]; do
+                    MEMBERS+=("$1")
+                    shift
+                done
+                ;;
+            --member=*)
+                MEMBERS+=("${1#*=}")
+                shift
+                ;;
+            -h|--help)
+                usage
+                ;;
+            --)
+                shift
+                POSITIONAL+=("$@")
+                break
+                ;;
+            --*)
+                echo "ERROR: unknown option $1" >&2
+                usage
+                ;;
+            *)
+                POSITIONAL+=("$1")
+                shift
+                ;;
+        esac
+    done
+}
+
+require_org() {
+    if [ -z "${ORG:-}" ]; then
+        echo "ERROR: --org <o> is required (e.g. --org lampiphant_de). --customer is an alias." >&2
+        exit 1
+    fi
+    if ! entry_exists "$(customer_dn "$ORG")"; then
+        echo "ERROR: customer branch $(customer_dn "$ORG") does not exist (create it with add-customer first)" >&2
+        exit 1
+    fi
+}
+
+require_group_name() {
+    if [ -z "${1:-}" ]; then
+        echo "ERROR: group name is required" >&2
+        usage
+    fi
+}
+
+add_members_to_group() {
+    local gdn="$1" org="$2"
+    shift 2
+    local uid udn added=0 skipped=0
+    for uid in "$@"; do
+        [ -n "$uid" ] || continue
+        udn=$(user_dn "$uid" "$org")
+        if ! entry_exists "$udn"; then
+            echo "ERROR: user ${udn} does not exist" >&2
+            exit 1
+        fi
+        if is_member "$gdn" "$udn"; then
+            echo "Already a member: ${udn}"
+            skipped=$((skipped + 1))
+        else
+            ldap_modify <<LDIF
+dn: ${gdn}
+changetype: modify
+add: member
+member: ${udn}
+LDIF
+            echo "Added member ${udn}"
+            added=$((added + 1))
+        fi
+        warn_if_locked "$udn" "$uid"
+    done
+    return 0
 }
 
 store_customer_secret() {
@@ -215,6 +416,152 @@ mailEnabled: TRUE
 LDIF
         echo "Created alias ${alias_addr} -> ${target} (${dn})"
         ;;
+    add-group)
+        need_container
+        shift
+        parse_org_member_args "$@"
+        group="${POSITIONAL[0]:-}"
+        require_group_name "$group"
+        if [ ${#POSITIONAL[@]} -gt 1 ]; then
+            echo "ERROR: unexpected argument '${POSITIONAL[1]}' (pass users with --member)" >&2
+            usage
+        fi
+        require_org
+        gdn=$(group_dn "$group" "$ORG")
+        if entry_exists "$gdn"; then
+            echo "Group ${gdn} already exists"
+            if [ ${#MEMBERS[@]} -gt 0 ]; then
+                add_members_to_group "$gdn" "$ORG" "${MEMBERS[@]}"
+            fi
+        else
+            if [ ${#MEMBERS[@]} -eq 0 ]; then
+                echo "ERROR: groupOfNames requires at least one --member <uid> when creating ${gdn}" >&2
+                exit 1
+            fi
+            # Validate users first, then create the group with every requested member.
+            member_ldif=""
+            for uid in "${MEMBERS[@]}"; do
+                udn=$(user_dn "$uid" "$ORG")
+                if ! entry_exists "$udn"; then
+                    echo "ERROR: user ${udn} does not exist" >&2
+                    exit 1
+                fi
+                member_ldif="${member_ldif}member: ${udn}
+"
+            done
+            ldap_add <<LDIF
+dn: ${gdn}
+objectClass: top
+objectClass: groupOfNames
+cn: ${group}
+${member_ldif}description: Group ${group}
+LDIF
+            echo "Created group ${gdn}"
+            for uid in "${MEMBERS[@]}"; do
+                echo "Added member $(user_dn "$uid" "$ORG")"
+                warn_if_locked "$(user_dn "$uid" "$ORG")" "$uid"
+            done
+        fi
+        ;;
+    add-member)
+        need_container
+        shift
+        parse_org_member_args "$@"
+        group="${POSITIONAL[0]:-}"
+        require_group_name "$group"
+        # Positional uids after the group name are also accepted.
+        if [ ${#POSITIONAL[@]} -gt 1 ]; then
+            MEMBERS+=("${POSITIONAL[@]:1}")
+        fi
+        if [ ${#MEMBERS[@]} -eq 0 ]; then
+            echo "ERROR: add-member requires at least one uid (--member <uid> or a positional uid)" >&2
+            usage
+        fi
+        require_org
+        gdn=$(group_dn "$group" "$ORG")
+        if ! entry_exists "$gdn"; then
+            echo "ERROR: group ${gdn} does not exist (create it with add-group first)" >&2
+            exit 1
+        fi
+        add_members_to_group "$gdn" "$ORG" "${MEMBERS[@]}"
+        ;;
+    remove-member)
+        need_container
+        shift
+        parse_org_member_args "$@"
+        group="${POSITIONAL[0]:-}"
+        require_group_name "$group"
+        if [ ${#POSITIONAL[@]} -gt 1 ]; then
+            MEMBERS+=("${POSITIONAL[@]:1}")
+        fi
+        if [ ${#MEMBERS[@]} -eq 0 ]; then
+            echo "ERROR: remove-member requires at least one uid (--member <uid> or a positional uid)" >&2
+            usage
+        fi
+        require_org
+        gdn=$(group_dn "$group" "$ORG")
+        if ! entry_exists "$gdn"; then
+            echo "ERROR: group ${gdn} does not exist" >&2
+            exit 1
+        fi
+        for uid in "${MEMBERS[@]}"; do
+            udn=$(user_dn "$uid" "$ORG")
+            if ! is_member "$gdn" "$udn"; then
+                echo "Not a member: ${udn}"
+                continue
+            fi
+            count=$(member_count "$gdn")
+            if [ "$count" -le 1 ]; then
+                echo "ERROR: cannot remove last member ${udn} from ${gdn} (groupOfNames requires at least one member)" >&2
+                exit 1
+            fi
+            ldap_modify <<LDIF
+dn: ${gdn}
+changetype: modify
+delete: member
+member: ${udn}
+LDIF
+            echo "Removed member ${udn}"
+        done
+        ;;
+    list-groups)
+        need_container
+        shift
+        parse_org_member_args "$@"
+        if [ ${#POSITIONAL[@]} -gt 0 ]; then
+            echo "ERROR: unexpected argument '${POSITIONAL[0]}' (use --org <o>)" >&2
+            usage
+        fi
+        if [ -n "${ORG:-}" ]; then
+            require_org
+            bases=("ou=groups,$(customer_dn "$ORG")")
+        else
+            # Every customer branch (o=<customer>,<BASE_DN>).
+            mapfile -t orgs < <(ldap_search -b "$BASE_DN" -s one '(objectClass=organization)' o \
+                | awk '/^o:/{print $2}')
+            bases=()
+            for o in "${orgs[@]}"; do
+                [ -n "$o" ] || continue
+                bases+=("ou=groups,$(customer_dn "$o")")
+            done
+        fi
+        found=0
+        for base in "${bases[@]}"; do
+            if ! entry_exists "$base"; then
+                continue
+            fi
+            # Safe attributes only (no passwords).
+            out=$(ldap_search -b "$base" -s one '(objectClass=groupOfNames)' dn cn member description || true)
+            if [ -n "$out" ]; then
+                echo "$out"
+                echo
+                found=1
+            fi
+        done
+        if [ "$found" -eq 0 ]; then
+            echo "No groups found."
+        fi
+        ;;
     list)
         need_container
         if [ -n "${2:-}" ]; then
@@ -248,8 +595,11 @@ LDIF
         docker exec "$CONTAINER" rm -f /tmp/import.ldif
         echo "Imported ${file}"
         ;;
+    -h|--help|"")
+        usage
+        ;;
     *)
-        sed -n '2,16p' "$0"
-        exit 1
+        echo "ERROR: unknown command ${1}" >&2
+        usage
         ;;
 esac

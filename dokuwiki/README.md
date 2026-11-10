@@ -41,11 +41,16 @@ reachable; after a restart it should be gone, as with the lapha.de wiki.
 
 When `DOKUWIKI_AUTH=ldap`, the installer-created local admin can no longer log
 in (`authtype=authldap`). Members of `LDAP_ADMIN_GROUP` become superusers.
-`ou=groups` already exists per customer, but no groups have been created yet
-and `ldapadmin.sh` has no `add-group` command. Create a `groupOfNames` entry
-(for example `cn=wiki-admin,ou=groups,o=<customer>,dc=lampiphant,dc=de`) with
-`member` DNs before you rely on LDAP logins for administration. The `memberOf`
-overlay is already enabled on the directory.
+Create the group with `ldapadmin.sh` before you rely on LDAP logins for
+administration (groupOfNames with `member` DNs, matching the authldap
+`groupfilter`). The `memberOf` overlay is already enabled on the directory:
+
+```bash
+/opt/docker/_apps_/generated/ldap/ldapadmin.sh add-group wiki-admin \
+  --org <customer> --member <uid>
+# further members:  ... add-member wiki-admin --org <customer> --member <uid>
+# list:             ... list-groups --org <customer>
+```
 
 Users are `inetOrgPerson` under `ou=people,o=<customer>,dc=lampiphant,dc=de`
 (`uid`, `cn`, `mail`). Most existing accounts live under `o=lampiphant_de`.
