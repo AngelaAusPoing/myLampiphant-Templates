@@ -17,8 +17,8 @@ SPRW_GHOST_TIMEZONE=Europe/Berlin
 # === Database ===
 SPRW_GHOST_DB_NAME=ghost
 SPRW_GHOST_DB_USER=ghost
-SPRW_GHOST_DB_ROOT_PASSWORD=!!NEW_PASSWORD!!
-SPRW_GHOST_DB_PASSWORD=!!NEW_PASSWORD!!
+SPRW_GHOST_DB_ROOT_PASSWORD=!!DB_ROOT_PASSWORD!!
+SPRW_GHOST_DB_PASSWORD=!!DB_PASSWORD!!
 
 # === Mail (SMTP via the host mailserver). Leave MAIL_ENABLED=false until
 # a real mailbox exists; do not invent credentials here. ===
