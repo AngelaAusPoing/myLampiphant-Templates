@@ -1,0 +1,18 @@
+#!/bin/bash
+# Default variables for docusaurus
+
+APPDOMAIN='!!APPDOMAIN!!'
+MOUNT_TEMPLATES='!!MOUNT_TEMPLATES!!'   # true mounts !!TEMPLATES_DIR!! read-only into the container (fallback for the docs)
+TEMPLATES_DIR='!!TEMPLATES_DIR!!'       # Host path of the templates, default /opt/docker/_templates_
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$APPDOMAIN" ] || [ "$APPDOMAIN" = '!!APPDOMAIN!!' ]; then
+	APPDOMAIN=docs.${DOMAIN:-example.com}
+fi
+if [ -z "$MOUNT_TEMPLATES" ] || [ "$MOUNT_TEMPLATES" = '!!MOUNT_TEMPLATES!!' ]; then
+	MOUNT_TEMPLATES=false
+fi
+if [ -z "$TEMPLATES_DIR" ] || [ "$TEMPLATES_DIR" = '!!TEMPLATES_DIR!!' ]; then
+	TEMPLATES_DIR=/opt/docker/_templates_
+fi
