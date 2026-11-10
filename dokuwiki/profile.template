@@ -8,8 +8,15 @@
 # Install (several stacks per customer, one per domain — same instance type as wordpress):
 #   app.sh dokuwiki add <customer> <domain>
 #   example: app.sh dokuwiki add lapha_de wiki.example.com
+#   LDAP:    app.sh dokuwiki add <customer> <domain> --var DOKUWIKI_AUTH=ldap --var DOKUWIKI_ACCESS=closed
 #
 # The stack is named dokuwiki_d_<domain_normalized>.
+#
+# Options (Jinja2 / Docusaurus buttons):
+#   DOKUWIKI_AUTH:   plain (default) | ldap
+#   DOKUWIKI_ACCESS: open  (default) | closed
+# closed = only logged-in users can read (* @ALL 0, * @user 8) and self-registration is disabled.
+# ldap   = authldap against the host OpenLDAP stack (readonly bind, customer subtree).
 
 # The following variables are read by app.sh
 SPRW__APP_NAME='dokuwiki'
@@ -33,6 +40,67 @@ SPRW_DOKUWIKI_PUID='1000'
 SPRW_DOKUWIKI_PGID='1000'
 SPRW_DOKUWIKI_TIMEZONE='Europe/Berlin'
 
+# Auth and access options
+SPRW_DOKUWIKI_AUTH='!!DOKUWIKI_AUTH!!'                 # plain | ldap
+SPRW_DOKUWIKI_ACCESS='!!DOKUWIKI_ACCESS!!'             # open | closed
+
+# LDAP (used when DOKUWIKI_AUTH=ldap). Bind password is NOT stored here;
+# the compose file mounts LDAP_BIND_PW_FILE (host read-only account).
+SPRW_DOKUWIKI_LDAP_SERVER='!!LDAP_SERVER!!'            # e.g. ldap://ldap:389
+SPRW_DOKUWIKI_LDAP_BIND_DN='!!LDAP_BIND_DN!!'          # read-only bind DN
+SPRW_DOKUWIKI_LDAP_USER_TREE='!!LDAP_USER_TREE!!'      # ou=people,o=<customer>,dc=lampiphant,dc=de
+SPRW_DOKUWIKI_LDAP_GROUP_TREE='!!LDAP_GROUP_TREE!!'    # ou=groups,o=<customer>,dc=lampiphant,dc=de
+SPRW_DOKUWIKI_LDAP_ADMIN_GROUP='!!LDAP_ADMIN_GROUP!!'  # LDAP group CN that becomes DokuWiki superuser (@group)
+SPRW_DOKUWIKI_LDAP_BIND_PW_FILE='!!LDAP_BIND_PW_FILE!!'
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, change the values above instead (defaults for empty values).
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW_DOKUWIKI_AUTH_PROTECT" ] || [[ "$SPRW_DOKUWIKI_AUTH_PROTECT" == *'!!'* ]]; then
+	SPRW_DOKUWIKI_AUTH_PROTECT=false
+fi
+if [ -z "$SPRW_DOKUWIKI_AUTH" ] || [[ "$SPRW_DOKUWIKI_AUTH" == *'!!'* ]]; then
+	SPRW_DOKUWIKI_AUTH=plain
+fi
+if [ -z "$SPRW_DOKUWIKI_ACCESS" ] || [[ "$SPRW_DOKUWIKI_ACCESS" == *'!!'* ]]; then
+	SPRW_DOKUWIKI_ACCESS=open
+fi
+if [ -z "$SPRW_DOKUWIKI_LDAP_SERVER" ] || [[ "$SPRW_DOKUWIKI_LDAP_SERVER" == *'!!'* ]]; then
+	SPRW_DOKUWIKI_LDAP_SERVER='ldap://ldap:389'
+fi
+if [ -z "$SPRW_DOKUWIKI_LDAP_BIND_DN" ] || [[ "$SPRW_DOKUWIKI_LDAP_BIND_DN" == *'!!'* ]]; then
+	SPRW_DOKUWIKI_LDAP_BIND_DN='cn=readonly,ou=system,dc=lampiphant,dc=de'
+fi
+# Customer subtree: o=<customer>,dc=lampiphant,dc=de (see ldapadmin.sh add-customer)
+_dw_customer="${SPRW__CUSTOMER:-}"
+if [ -z "$_dw_customer" ] || [[ "$_dw_customer" == *'!!'* ]]; then
+	_dw_customer='!!CUSTOMER!!'
+fi
+if [ -z "$SPRW_DOKUWIKI_LDAP_USER_TREE" ] || [[ "$SPRW_DOKUWIKI_LDAP_USER_TREE" == *'!!'* ]]; then
+	SPRW_DOKUWIKI_LDAP_USER_TREE="ou=people,o=${_dw_customer},dc=lampiphant,dc=de"
+fi
+if [ -z "$SPRW_DOKUWIKI_LDAP_GROUP_TREE" ] || [[ "$SPRW_DOKUWIKI_LDAP_GROUP_TREE" == *'!!'* ]]; then
+	SPRW_DOKUWIKI_LDAP_GROUP_TREE="ou=groups,o=${_dw_customer},dc=lampiphant,dc=de"
+fi
+if [ -z "$SPRW_DOKUWIKI_LDAP_ADMIN_GROUP" ] || [[ "$SPRW_DOKUWIKI_LDAP_ADMIN_GROUP" == *'!!'* ]]; then
+	SPRW_DOKUWIKI_LDAP_ADMIN_GROUP='wiki-admin'
+fi
+if [ -z "$SPRW_DOKUWIKI_LDAP_BIND_PW_FILE" ] || [[ "$SPRW_DOKUWIKI_LDAP_BIND_PW_FILE" == *'!!'* ]]; then
+	SPRW_DOKUWIKI_LDAP_BIND_PW_FILE='/opt/docker-data/_host_/ldap/secrets/readonly.pw'
+fi
+unset _dw_customer
+
 # ------------------------------------------------------------------------------------------------
 # Bridge for app.sh: placeholders are resolved by their bare name.
 DOKUWIKI_IMAGE="$SPRW_DOKUWIKI_IMAGE"
@@ -45,7 +113,12 @@ VOLUME_MODE="$SPRW__VOLUME_MODE"
 HTTP_REDIRECT="$SPRW__HTTP_REDIRECT"
 LETSENCRYPT_METHOD="$SPRW__LETSENCRYPT_METHOD"
 EXTERNAL_ACCESS="$SPRW__EXTERNAL_ACCESS"
-if [ -z "$SPRW_DOKUWIKI_AUTH_PROTECT" ] || [[ "$SPRW_DOKUWIKI_AUTH_PROTECT" == *'!!'* ]]; then
-	SPRW_DOKUWIKI_AUTH_PROTECT=false
-fi
 AUTH_PROTECT="$SPRW_DOKUWIKI_AUTH_PROTECT"
+DOKUWIKI_AUTH="$SPRW_DOKUWIKI_AUTH"
+DOKUWIKI_ACCESS="$SPRW_DOKUWIKI_ACCESS"
+LDAP_SERVER="$SPRW_DOKUWIKI_LDAP_SERVER"
+LDAP_BIND_DN="$SPRW_DOKUWIKI_LDAP_BIND_DN"
+LDAP_USER_TREE="$SPRW_DOKUWIKI_LDAP_USER_TREE"
+LDAP_GROUP_TREE="$SPRW_DOKUWIKI_LDAP_GROUP_TREE"
+LDAP_ADMIN_GROUP="$SPRW_DOKUWIKI_LDAP_ADMIN_GROUP"
+LDAP_BIND_PW_FILE="$SPRW_DOKUWIKI_LDAP_BIND_PW_FILE"

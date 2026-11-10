@@ -2,21 +2,62 @@
 # Prepare host directories for DokuWiki. No secrets are set or printed here.
 # After the stack is up, complete the DokuWiki installer in the browser
 # (create the admin account there). Do not pass a password on this script.
+set -euo pipefail
+
 CUSTOMER="!!CUSTOMER!!"
 APPDOMAIN="!!APPDOMAIN!!"
 DATA_DIR="!!DATA_DIR!!"
 COMPOSE_DIR="!!COMPOSE_DIR!!"
+DOKUWIKI_AUTH="!!DOKUWIKI_AUTH!!"
+DOKUWIKI_ACCESS="!!DOKUWIKI_ACCESS!!"
+LDAP_BIND_PW_FILE="!!LDAP_BIND_PW_FILE!!"
+TEMPLATE_DIR="/opt/docker/_templates_/dokuwiki"
 PUID="1000"
 PGID="1000"
 
 echo "Installing DokuWiki for ${CUSTOMER} (${APPDOMAIN})..."
+echo "Auth: ${DOKUWIKI_AUTH:-plain}  Access: ${DOKUWIKI_ACCESS:-open}"
 
 mkdir -p "$COMPOSE_DIR"
 mkdir -p "$DATA_DIR/config"
+mkdir -p "$DATA_DIR/custom-cont-init.d"
+
+# linuxserver runs scripts in /custom-cont-init.d at every start.
+if [ -f "$TEMPLATE_DIR/apply-options.sh" ]; then
+    cp "$TEMPLATE_DIR/apply-options.sh" "$DATA_DIR/custom-cont-init.d/10-apply-options.sh"
+    chmod 755 "$DATA_DIR/custom-cont-init.d/10-apply-options.sh"
+else
+    echo "ERROR: $TEMPLATE_DIR/apply-options.sh is missing." >&2
+    exit 1
+fi
+
+{%- if DOKUWIKI_AUTH == "ldap" %}
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_shared_networks
+
+# The bind password is not copied into this tree and is never printed.
+# compose mounts LDAP_BIND_PW_FILE (default: host OpenLDAP readonly.pw).
+pw_file="${LDAP_BIND_PW_FILE:-/opt/docker-data/_host_/ldap/secrets/readonly.pw}"
+if [ ! -s "$pw_file" ]; then
+    echo "ERROR: DOKUWIKI_AUTH=ldap but the read-only bind secret is missing: $pw_file" >&2
+    exit 1
+fi
+{%- endif %}
+
 # linuxserver runs as PUID:PGID (default 1000:1000); also applied at container start.
 chown -R 1000:1000 "$DATA_DIR/config"
+chown -R root:root "$DATA_DIR/custom-cont-init.d"
+chmod 755 "$DATA_DIR/custom-cont-init.d"
 
 echo "Installation files prepared."
 echo "URL: https://${APPDOMAIN}"
 echo "Data: ${DATA_DIR}"
 echo "Open the URL and finish the DokuWiki installer in the browser to create the admin account."
+echo "Option scripts apply after the installer has written conf/local.php (then restart the stack)."
+{%- if DOKUWIKI_AUTH == "ldap" %}
+echo "LDAP: after the installer, restart so authldap is enabled. Members of the admin group become superusers."
+{%- endif %}
+{%- if DOKUWIKI_ACCESS == "closed" %}
+echo "Access is closed: anonymous has no read right; self-registration will be disabled."
+{%- endif %}
