@@ -3,7 +3,7 @@ services:
     image: alextselegidis/easyappointments:latest
     networks:
       - proxy-shared
-      - easyappointments_!!CUSTOMERNAME!!
+      - customer-net
     environment:
       - TZ=Europe/Berlin
       - BASE_URL=https://buchung.!!DOMAIN!!
@@ -28,7 +28,7 @@ services:
   mysql:
     image: mariadb:11.4-noble
     networks:
-      - easyappointments_!!CUSTOMERNAME!!
+      - customer-net
     volumes:
       - !!DATA_DIR!!/db:/var/lib/mysql
     environment:
@@ -45,9 +45,9 @@ services:
         condition: any
 
 networks:
-  easyappointments_!!CUSTOMERNAME!!:
-    driver: overlay
-    attachable: true
+  customer-net:
+    external: true
+    name: c_!!CUSTOMERNAME!!-net
   proxy-shared:
     external: true
     name: proxy-shared

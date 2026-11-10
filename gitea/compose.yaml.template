@@ -3,7 +3,7 @@ services:
     image: gitea/gitea:latest
     networks:
       - proxy-shared
-      - gitea_!!CUSTOMERNAME!!
+      - customer-net
     volumes:
       - !!DATA_DIR!!/data:/data
       - /etc/timezone:/etc/timezone:ro
@@ -37,7 +37,7 @@ services:
   db:
     image: mariadb:11.4-noble
     networks:
-      - gitea_!!CUSTOMERNAME!!
+      - customer-net
     volumes:
       - !!DATA_DIR!!/mysql:/var/lib/mysql
     environment:
@@ -52,9 +52,9 @@ services:
       retries: 10
 
 networks:
-  gitea_!!CUSTOMERNAME!!:
-    driver: overlay
-    attachable: true
+  customer-net:
+    external: true
+    name: c_!!CUSTOMERNAME!!-net
   proxy-shared:
     external: true
     name: proxy-shared

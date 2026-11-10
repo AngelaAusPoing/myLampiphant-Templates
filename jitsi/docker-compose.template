@@ -3,7 +3,7 @@ services:
     image: jitsi/web:${JITSI_IMAGE_VERSION:-stable-10741}
     networks:
       - proxy-shared
-      - jitsi_!!CUSTOMERNAME!!
+      - customer-net
     volumes:
       - !!DATA_DIR!!/web:/config:Z
       - !!DATA_DIR!!/web/crontabs:/var/spool/cron/crontabs:Z
@@ -44,7 +44,7 @@ services:
   prosody:
     image: jitsi/prosody:${JITSI_IMAGE_VERSION:-stable-10741}
     networks:
-      - jitsi_!!CUSTOMERNAME!!
+      - customer-net
     volumes:
       - !!DATA_DIR!!/prosody/config:/config:Z
       - !!DATA_DIR!!/prosody/prosody-plugins-custom:/prosody-plugins-custom:Z
@@ -70,7 +70,7 @@ services:
   jicofo:
     image: jitsi/jicofo:${JITSI_IMAGE_VERSION:-stable-10741}
     networks:
-      - jitsi_!!CUSTOMERNAME!!
+      - customer-net
     volumes:
       - !!DATA_DIR!!/jicofo:/config:Z
     environment:
@@ -89,7 +89,7 @@ services:
   jvb:
     image: jitsi/jvb:${JITSI_IMAGE_VERSION:-stable-10741}
     networks:
-      - jitsi_!!CUSTOMERNAME!!
+      - customer-net
     ports:
       - "!!JVB_PORT!!:!!JVB_PORT!!/udp"
     volumes:
@@ -111,9 +111,9 @@ services:
         condition: any
 
 networks:
-  jitsi_!!CUSTOMERNAME!!:
-    driver: overlay
-    attachable: true
+  customer-net:
+    external: true
+    name: c_!!CUSTOMERNAME!!-net
   proxy-shared:
     external: true
     name: proxy-shared

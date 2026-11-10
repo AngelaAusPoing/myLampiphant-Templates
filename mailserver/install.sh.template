@@ -56,22 +56,11 @@ fi
 
 # ---------------------------------------------------------------------------
 # 2. Shared internal Docker networks (idempotent). Declared as external in compose.
-#    ldap-shared: OpenLDAP and consumers (DMS, LAM, Authelia, apps with LDAP login).
-#    mail-shared: IMAP/SMTP access for other stacks (customer Roundcube, gitea, odoo, ...).
-#    Both are bridge networks with --internal (no internet). Outbound mail and Unbound
-#    keep using the stack's own mailnet, which is not internal.
+#    ldap-shared / mail-shared / komodo-internal are created by ensure-networks.sh.
 # ---------------------------------------------------------------------------
-ensure_docker_network() {
-    local name="$1"
-    if ! docker network inspect "$name" >/dev/null 2>&1; then
-        docker network create --driver bridge --internal \
-            --label mylampiphant.role=shared \
-            "$name" >/dev/null
-        echo "Created Docker network ${name} (internal bridge, no internet)"
-    fi
-}
-ensure_docker_network "ldap-shared"
-ensure_docker_network "mail-shared"
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_shared_networks
 
 # LDAP bind password for docker-mailserver (only when ACCOUNT_PROVISIONER=LDAP).
 # The file is mounted into the container; it is never written to the Komodo .env.
@@ -103,31 +92,54 @@ if [ "${SPRW_MAIL_ACCOUNT_PROVISIONER:-FILE}" = "LDAP" ]; then
 #!/bin/bash
 # managed by myLampiphant mailserver install.sh - no secrets in this file
 set -euo pipefail
+
+# 1. Keep Postfix LDAP bind_pw in sync with the secret file
 PW_FILE=/run/secrets/ldap_bind_pw
-if [ ! -s "$PW_FILE" ]; then
+if [ -s "$PW_FILE" ]; then
+  pw=$(cat "$PW_FILE")
+  for f in /etc/postfix/ldap-users.cf /etc/postfix/ldap-aliases.cf /etc/postfix/ldap-groups.cf /etc/postfix/ldap-domains.cf /etc/postfix/ldap-senders.cf /etc/postfix/maps/sender_login_maps.ldap; do
+    [ -f "$f" ] || continue
+    tmp="${f}.tmp"
+    while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in
+        bind_pw*|bind_pw[[:space:]]*)
+          printf 'bind_pw = %s
+' "$pw"
+          ;;
+        *)
+          printf '%s
+' "$line"
+          ;;
+      esac
+    done < "$f" > "$tmp"
+    mv "$tmp" "$f"
+    chmod 600 "$f"
+  done
+  unset pw
+else
   echo "user-patches: $PW_FILE missing, skipping LDAP bind_pw update"
-  exit 0
 fi
-pw=$(cat "$PW_FILE")
-for f in /etc/postfix/ldap-users.cf /etc/postfix/ldap-aliases.cf /etc/postfix/ldap-groups.cf /etc/postfix/ldap-domains.cf /etc/postfix/ldap-senders.cf /etc/postfix/maps/sender_login_maps.ldap; do
-  [ -f "$f" ] || continue
-  tmp="${f}.tmp"
+
+# 2. Enable Dovecot master users also when ACCOUNT_PROVISIONER=LDAP
+#    (DMS only runs _create_masters for FILE).
+MASTERS_CF=/tmp/docker-mailserver/dovecot-masters.cf
+MASTERDB=/etc/dovecot/masterdb
+if [ -s "$MASTERS_CF" ]; then
+  : > "$MASTERDB"
   while IFS= read -r line || [ -n "$line" ]; do
     case "$line" in
-      bind_pw*|bind_pw[[:space:]]*)
-        printf 'bind_pw = %s
-' "$pw"
-        ;;
-      *)
-        printf '%s
-' "$line"
-        ;;
+      ''|\#*) continue ;;
     esac
-  done < "$f" > "$tmp"
-  mv "$tmp" "$f"
-  chmod 600 "$f"
-done
-unset pw
+    login=${line%%|*}
+    rest=${line#*|}
+    [ -n "$login" ] && [ -n "$rest" ] && printf '%s:%s
+' "$login" "$rest"
+  done < "$MASTERS_CF" >> "$MASTERDB"
+  chown dovecot:dovecot "$MASTERDB"
+  chmod 640 "$MASTERDB"
+  sed -i -e '/\!include auth-master\.inc/s/^#//' /etc/dovecot/conf.d/10-auth.conf
+  echo "user-patches: enabled Dovecot master users from ${MASTERS_CF}"
+fi
 PATCH
     chmod 700 "$patch"
 fi

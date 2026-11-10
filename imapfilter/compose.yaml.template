@@ -1,0 +1,31 @@
+# imapfilter: per-customer stack. Sorts mail across mailboxes on the host mailserver.
+# No public HTTP. Reaches the mail host only via the internal mail-shared network.
+# Config and the Dovecot master-user password live in the data directory (chmod 600, uid 1001), never in git.
+# The community image (ntnn/imapfilter) runs an internal loop; IMAPFILTER_SLEEP is the interval in seconds.
+services:
+  imapfilter:
+    image: docker.io/ntnn/imapfilter:latest
+    container_name: !!STACKNAME!!
+    restart: unless-stopped
+    mem_limit: !!MEMORY_LIMIT!!
+    user: "1001:1001"
+    networks:
+      - mail-shared
+    environment:
+      - TZ=!!TIMEZONE!!
+      - IMAPFILTER_SERVER=!!MAILHOST!!
+      - IMAPFILTER_PORT=!!IMAP_PORT!!
+      - IMAPFILTER_MASTER_USER=!!MASTER_USER!!
+      - IMAPFILTER_MASTER_PASSWORD_FILE=/run/secrets/imapfilter-master.pw
+      - IMAPFILTER_TEST=!!TEST!!
+      - IMAPFILTER_SLEEP=!!SLEEP!!
+      - IMAPFILTER_CONFIG_BASE=/config
+      - IMAPFILTER_CONFIG=config.lua
+    volumes:
+      - !!DATA_DIR!!/config.lua:/config/config.lua:ro
+      - !!DATA_DIR!!/secrets/imapfilter-master.pw:/run/secrets/imapfilter-master.pw:ro
+
+networks:
+  mail-shared:
+    external: true
+    name: mail-shared

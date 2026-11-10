@@ -1,0 +1,9 @@
+# Persistent config for imapfilter (per customer). Do not store the master password here;
+# it lives in !!DATA_DIR!!/secrets/imapfilter-master.pw
+SPRW_IMAPFILTER_MAILHOST=!!MAILHOST!!
+SPRW_IMAPFILTER_IMAP_PORT=!!IMAP_PORT!!
+SPRW_IMAPFILTER_MASTER_USER=!!MASTER_USER!!
+SPRW_IMAPFILTER_TEST=!!TEST!!
+SPRW_IMAPFILTER_SLEEP=!!SLEEP!!
+SPRW_IMAPFILTER_MEMORY_LIMIT=!!MEMORY_LIMIT!!
+SPRW_IMAPFILTER_TIMEZONE=!!TIMEZONE!!

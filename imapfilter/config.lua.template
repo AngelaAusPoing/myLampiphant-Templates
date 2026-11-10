@@ -1,0 +1,39 @@
+-- imapfilter example configuration (myLampiphant)
+-- Never put mailbox or master passwords in this file. Keep it chmod 600.
+-- The Dovecot master user is configured on the mailserver
+-- (`setup dovecot-master add !!MASTER_USER!!`); the password lives in
+-- /run/secrets/imapfilter-master.pw (mounted from the data directory).
+
+options.timeout = 120
+options.subscribe = true
+options.info = true
+
+local function read_secret(path)
+        local f = assert(io.open(path, "r"))
+        local s = f:read("*a")
+        f:close()
+        return (s:gsub("%s+$", ""))
+end
+
+local function master_account(mailbox)
+        return IMAP {
+                server = os.getenv("IMAPFILTER_SERVER") or "mail.example.com",
+                port = tonumber(os.getenv("IMAPFILTER_PORT") or "993"),
+                username = mailbox .. "*" .. (os.getenv("IMAPFILTER_MASTER_USER") or "imapfilter"),
+                password = read_secret(os.getenv("IMAPFILTER_MASTER_PASSWORD_FILE") or "/run/secrets/imapfilter-master.pw"),
+                ssl = "tls1.2",
+        }
+end
+
+-- Replace with the customer's mailboxes:
+-- local account1 = master_account("user@example.com")
+--
+-- TEST is true unless IMAPFILTER_TEST=false
+-- TEST = (os.getenv("IMAPFILTER_TEST") or "true") ~= "false"
+--
+-- local res = account1.INBOX:contain_subject("Newsletter")
+-- if TEST then
+--   print("Would move " .. #res .. " messages")
+-- else
+--   res:move_messages(account1["Newsletter"])
+-- end

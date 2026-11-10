@@ -13,6 +13,10 @@ mkdir -p "$DATA_DIR/postgres"
 mkdir -p "$DATA_DIR/odoo-data"
 mkdir -p "$DATA_DIR/addons"
 
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_mylampiphant_networks "$CUSTOMER"
+
 # Wichtig: Odoo-Container läuft mit UID 100, Gruppe 101 (odoo), daher müssen die Verzeichnisse entsprechend berechtigt sein
 chown -R 100:101 "$DATA_DIR/postgres"
 chown -R 100:101 "$DATA_DIR/odoo-data"

@@ -46,14 +46,11 @@ read_cfg() {
 }
 
 # ---------------------------------------------------------------------------
-# 2. Shared internal Docker network (idempotent). Declared as external in compose.
+# 2. Shared internal Docker networks (idempotent). Declared as external in compose.
 # ---------------------------------------------------------------------------
-if ! docker network inspect ldap-shared >/dev/null 2>&1; then
-    docker network create --driver bridge --internal \
-        --label mylampiphant.role=shared \
-        ldap-shared >/dev/null
-    echo "Created Docker network ldap-shared (internal bridge, no internet)"
-fi
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_shared_networks
 
 # ---------------------------------------------------------------------------
 # 3. Directories and build context (Dockerfile + entrypoint + schema)

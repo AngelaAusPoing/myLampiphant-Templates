@@ -6,6 +6,7 @@ services:
     working_dir: /app
     networks:
       - proxy-shared
+      - customer-net
     volumes:
       - /opt/docker-data/${CUSTOMERNAME:-customer_directory}/${STACKNAME:-docusaurus_d_docs_example_com}/website:/app
     command: sh -c "npm install && npm run build && npx serve build -l 3000"
@@ -20,4 +21,8 @@ services:
 networks:
   proxy-shared:
     external: true
+    name: proxy-shared
+  customer-net:
+    external: true
+    name: c_${CUSTOMERNAME:-customer_directory}-net
 

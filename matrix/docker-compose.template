@@ -2,7 +2,7 @@ services:
   postgres:
     image: postgres:16-alpine
     networks:
-      - matrix_!!CUSTOMERNAME!!
+      - customer-net
     volumes:
       - !!DATA_DIR!!/postgres:/var/lib/postgresql/data
     environment:
@@ -22,7 +22,7 @@ services:
   redis:
     image: redis:7-alpine
     networks:
-      - matrix_!!CUSTOMERNAME!!
+      - customer-net
     deploy:
       restart_policy:
         condition: any
@@ -31,7 +31,7 @@ services:
     image: matrixdotorg/synapse:latest
     networks:
       - proxy-shared
-      - matrix_!!CUSTOMERNAME!!
+      - customer-net
     volumes:
       - !!DATA_DIR!!/synapse:/data
     depends_on:
@@ -54,6 +54,7 @@ services:
     image: vectorim/element-web:latest
     networks:
       - proxy-shared
+      - customer-net
     volumes:
       - !!DATA_DIR!!/element/config.json:/app/config.json:ro
     labels:
@@ -71,6 +72,7 @@ services:
     image: nginx:alpine
     networks:
       - proxy-shared
+      - customer-net
     volumes:
       - !!DATA_DIR!!/wellknown/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - !!DATA_DIR!!/wellknown/www:/var/www:ro
@@ -86,9 +88,9 @@ services:
         condition: any
 
 networks:
-  matrix_!!CUSTOMERNAME!!:
-    driver: bridge
-    attachable: true
+  customer-net:
+    external: true
+    name: c_!!CUSTOMERNAME!!-net
   proxy-shared:
     external: true
     name: proxy-shared

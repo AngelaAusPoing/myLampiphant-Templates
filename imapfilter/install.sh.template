@@ -1,0 +1,60 @@
+#!/bin/bash
+# Install imapfilter for one customer. Idempotent. Secrets are never printed.
+set -euo pipefail
+
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__STACKNAME="!!STACKNAME!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
+SPRW_IMAPFILTER_MAILHOST="!!MAILHOST!!"
+SPRW_IMAPFILTER_MASTER_USER="!!MASTER_USER!!"
+
+TEMPLATE_DIR="/opt/docker/_templates_/imapfilter"
+
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_mylampiphant_networks "$SPRW__CUSTOMER"
+
+mkdir -p "$SPRW__DATA_DIR/secrets" "$SPRW__COMPOSE_DIR"
+chmod 700 "$SPRW__DATA_DIR" "$SPRW__DATA_DIR/secrets"
+
+cp -a "$TEMPLATE_DIR/entrypoint.sh" "$SPRW__COMPOSE_DIR/entrypoint.sh"
+chmod 755 "$SPRW__COMPOSE_DIR/entrypoint.sh"
+
+# Example / customer config: never overwrite an existing file (may contain rules).
+if [ ! -f "$SPRW__DATA_DIR/config.lua" ]; then
+    cp -a "$TEMPLATE_DIR/config.lua.template" "$SPRW__DATA_DIR/config.lua"
+    chmod 600 "$SPRW__DATA_DIR/config.lua"
+    echo "Wrote example config to ${SPRW__DATA_DIR}/config.lua — add master_account() mailboxes and rules before starting."
+fi
+
+# Master password file: create once, never overwrite, never print.
+SECRET="$SPRW__DATA_DIR/secrets/imapfilter-master.pw"
+if [ ! -s "$SECRET" ]; then
+    # Prefer the host-wide mailserver secret if it already exists, so every
+    # customer stack on this host uses the same Dovecot master user.
+    HOST_SECRET="/opt/docker-data/_host_/mailserver/secrets/imapfilter-master.pw"
+    if [ -s "$HOST_SECRET" ]; then
+        umask 077
+        cp -a "$HOST_SECRET" "$SECRET"
+        echo "Copied existing mailserver master-user secret into ${SECRET}"
+    else
+        umask 077
+        openssl rand -base64 24 | tr -d '/=\n' > "$SECRET"
+        chmod 600 "$SECRET"
+        echo "Generated a new master-user password in ${SECRET}"
+        echo "On the mailserver, create the Dovecot master user (do not log the password):"
+        echo "  docker exec -i mailserver setup dovecot-master add ${SPRW_IMAPFILTER_MASTER_USER}"
+        echo "and paste the contents of ${SECRET} when prompted."
+        echo "The same file must be readable by this stack (already mounted)."
+    fi
+fi
+chmod 600 "$SECRET"
+# The community image runs as uid 1001 (imapfilter)
+chown 1001:1001 "$SPRW__DATA_DIR/config.lua" "$SECRET"
+chmod 600 "$SPRW__DATA_DIR/config.lua" "$SECRET"
+
+echo "imapfilter install finished for ${SPRW__CUSTOMER} (stack ${SPRW__STACKNAME})"
+echo "Mail host: ${SPRW_IMAPFILTER_MAILHOST}"
+echo "Leave IMAPFILTER_TEST=true and the stack stopped until mailboxes are in place."
+echo "Migration day: stop the old cronjob, copy mailboxes, start this stack with TEST=true, check the logs, then set TEST=false."
