@@ -1,0 +1,116 @@
+#!/bin/bash
+# Default variables for the app "ghost" (official Ghost CMS + MySQL 8)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (several stacks per customer, one per domain):
+#   app.sh ghost add <customer> <domain>
+#   app.sh ghost add lapha_de ghost.lapha.de
+#
+# The stack is named ghost_d_<domain_normalized>, e.g. ghost_d_ghost_lapha_de.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='ghost'
+SPRW__APP_PREFIX='GHOST'
+
+# Global environment variables that are used in the app's templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # Change to your app's domain name (e.g. ghost.example.com)
+
+# Global Jinja2 variables that are used in the app's templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# App-specific variables (SPRW_GHOST_*)
+SPRW_GHOST_IMAGE='!!GHOST_IMAGE!!'                  # official Ghost image, ARM64-verified
+SPRW_GHOST_DB_IMAGE='!!DB_IMAGE!!'                  # official MySQL 8 image, ARM64-verified
+SPRW_GHOST_MEM_LIMIT='!!GHOST_MEM_LIMIT!!'          # compose mem_limit for Ghost (e.g. 384m)
+SPRW_GHOST_DB_MEM_LIMIT='!!DB_MEM_LIMIT!!'          # compose mem_limit for MySQL (e.g. 384m)
+SPRW_GHOST_INNODB_BUFFER_POOL='!!INNODB_BUFFER_POOL!!'  # MySQL innodb_buffer_pool_size
+SPRW_GHOST_NODE_MAX_OLD_SPACE='!!NODE_MAX_OLD_SPACE!!'  # Node.js heap cap in MB
+SPRW_GHOST_TIMEZONE='!!TIMEZONE!!'
+SPRW_GHOST_DB_NAME='!!DB_NAME!!'
+SPRW_GHOST_DB_USER='!!DB_USER!!'
+SPRW_GHOST_DB_ROOT_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_GHOST_DB_PASSWORD="!!NEW_PASSWORD!!"
+
+# Mail: points at the host mailserver SMTP (mail.lapha.de:587, STARTTLS).
+# Do not auto-generate a mailbox password; set MAIL_USER / MAIL_PASSWORD
+# to an existing mailbox, then set MAIL_ENABLED=true.
+SPRW_GHOST_MAIL_ENABLED='!!MAIL_ENABLED!!'
+SPRW_GHOST_MAIL_HOST='!!MAIL_HOST!!'
+SPRW_GHOST_MAIL_PORT='!!MAIL_PORT!!'
+SPRW_GHOST_MAIL_SECURE='!!MAIL_SECURE!!'
+SPRW_GHOST_MAIL_REQUIRE_TLS='!!MAIL_REQUIRE_TLS!!'
+SPRW_GHOST_MAIL_USER='!!MAIL_USER!!'
+SPRW_GHOST_MAIL_PASSWORD='!!MAIL_PASSWORD!!'
+SPRW_GHOST_MAIL_FROM='!!MAIL_FROM!!'
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__APPDOMAIN" ] || [ "$SPRW__APPDOMAIN" = '!!APPDOMAIN!!' ]; then
+	SPRW__APPDOMAIN=ghost.${SPRW__DOMAIN:-example.com}
+fi
+
+if [ -z "$SPRW__VOLUME_MODE" ] || [ "$SPRW__VOLUME_MODE" = '!!VOLUME_MODE!!' ]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [ "$SPRW__HTTP_REDIRECT" = '!!HTTP_REDIRECT!!' ]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [ "$SPRW__LETSENCRYPT_METHOD" = '!!LETSENCRYPT_METHOD!!' ]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [ "$SPRW__EXTERNAL_ACCESS" = '!!EXTERNAL_ACCESS!!' ]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+
+if [ -z "$SPRW_GHOST_IMAGE" ] || [ "$SPRW_GHOST_IMAGE" = '!!GHOST_IMAGE!!' ]; then
+	SPRW_GHOST_IMAGE=ghost:6.75.0-alpine
+fi
+if [ -z "$SPRW_GHOST_DB_IMAGE" ] || [ "$SPRW_GHOST_DB_IMAGE" = '!!DB_IMAGE!!' ]; then
+	SPRW_GHOST_DB_IMAGE=mysql:8.4.13
+fi
+if [ -z "$SPRW_GHOST_MEM_LIMIT" ] || [ "$SPRW_GHOST_MEM_LIMIT" = '!!GHOST_MEM_LIMIT!!' ]; then
+	SPRW_GHOST_MEM_LIMIT=384m
+fi
+if [ -z "$SPRW_GHOST_DB_MEM_LIMIT" ] || [ "$SPRW_GHOST_DB_MEM_LIMIT" = '!!DB_MEM_LIMIT!!' ]; then
+	SPRW_GHOST_DB_MEM_LIMIT=384m
+fi
+if [ -z "$SPRW_GHOST_INNODB_BUFFER_POOL" ] || [ "$SPRW_GHOST_INNODB_BUFFER_POOL" = '!!INNODB_BUFFER_POOL!!' ]; then
+	SPRW_GHOST_INNODB_BUFFER_POOL=128M
+fi
+if [ -z "$SPRW_GHOST_NODE_MAX_OLD_SPACE" ] || [ "$SPRW_GHOST_NODE_MAX_OLD_SPACE" = '!!NODE_MAX_OLD_SPACE!!' ]; then
+	SPRW_GHOST_NODE_MAX_OLD_SPACE=280
+fi
+if [ -z "$SPRW_GHOST_TIMEZONE" ] || [ "$SPRW_GHOST_TIMEZONE" = '!!TIMEZONE!!' ]; then
+	SPRW_GHOST_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_GHOST_DB_NAME" ] || [ "$SPRW_GHOST_DB_NAME" = '!!DB_NAME!!' ]; then
+	SPRW_GHOST_DB_NAME=ghost
+fi
+if [ -z "$SPRW_GHOST_DB_USER" ] || [ "$SPRW_GHOST_DB_USER" = '!!DB_USER!!' ]; then
+	SPRW_GHOST_DB_USER=ghost
+fi
+
+if [ -z "$SPRW_GHOST_MAIL_ENABLED" ] || [ "$SPRW_GHOST_MAIL_ENABLED" = '!!MAIL_ENABLED!!' ]; then
+	SPRW_GHOST_MAIL_ENABLED=false
+fi
+if [ -z "$SPRW_GHOST_MAIL_HOST" ] || [ "$SPRW_GHOST_MAIL_HOST" = '!!MAIL_HOST!!' ]; then
+	SPRW_GHOST_MAIL_HOST=mail.lapha.de
+fi
+if [ -z "$SPRW_GHOST_MAIL_PORT" ] || [ "$SPRW_GHOST_MAIL_PORT" = '!!MAIL_PORT!!' ]; then
+	SPRW_GHOST_MAIL_PORT=587
+fi
+if [ -z "$SPRW_GHOST_MAIL_SECURE" ] || [ "$SPRW_GHOST_MAIL_SECURE" = '!!MAIL_SECURE!!' ]; then
+	SPRW_GHOST_MAIL_SECURE=false
+fi
+if [ -z "$SPRW_GHOST_MAIL_REQUIRE_TLS" ] || [ "$SPRW_GHOST_MAIL_REQUIRE_TLS" = '!!MAIL_REQUIRE_TLS!!' ]; then
+	SPRW_GHOST_MAIL_REQUIRE_TLS=true
+fi
+if [ -z "$SPRW_GHOST_MAIL_FROM" ] || [ "$SPRW_GHOST_MAIL_FROM" = '!!MAIL_FROM!!' ]; then
+	SPRW_GHOST_MAIL_FROM="Ghost <noreply@${SPRW__APPDOMAIN}>"
+fi

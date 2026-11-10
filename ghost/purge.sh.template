@@ -1,0 +1,16 @@
+#!/bin/bash
+# Delete Ghost for !!CUSTOMER!! including all data.
+
+set -euo pipefail
+
+CUSTOMER="!!CUSTOMER!!"
+APPDOMAIN="!!APPDOMAIN!!"
+DATA_DIR="!!DATA_DIR!!"
+CONFIG_DIR="!!CONFIG_DIR!!"
+
+echo "Deleting Ghost for ${CUSTOMER} (${APPDOMAIN}) including all data..."
+
+rm -rf "$CONFIG_DIR"
+rm -rf "$DATA_DIR"
+
+echo "Ghost completely deleted"

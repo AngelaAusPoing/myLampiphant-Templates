@@ -1,0 +1,27 @@
+#!/bin/bash
+# Install Ghost data directories and networks. Do not print secrets.
+set -euo pipefail
+
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__APPDOMAIN="!!APPDOMAIN!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
+
+echo "Installing Ghost for ${SPRW__CUSTOMER} (${SPRW__APPDOMAIN})..."
+
+mkdir -p "$SPRW__COMPOSE_DIR"
+mkdir -p "$SPRW__DATA_DIR/db"
+mkdir -p "$SPRW__DATA_DIR/content"
+
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_mylampiphant_networks "$SPRW__CUSTOMER"
+
+# Official Ghost image runs as node (uid 1000); official MySQL 8 as mysql (uid 999).
+chown -R 1000:1000 "$SPRW__DATA_DIR/content"
+chown -R 999:999 "$SPRW__DATA_DIR/db"
+
+echo "Installation finished."
+echo "Ghost URL: https://${SPRW__APPDOMAIN}"
+echo "Data directory: ${SPRW__DATA_DIR}"
+echo "After the first start, complete the Ghost setup at https://${SPRW__APPDOMAIN}/ghost"

@@ -1,0 +1,12 @@
+#!/bin/bash
+# Ghost migration placeholder for !!CUSTOMER!!
+
+set -euo pipefail
+
+CUSTOMER="!!CUSTOMER!!"
+APPDOMAIN="!!APPDOMAIN!!"
+CONFIG_DIR="!!CONFIG_DIR!!"
+
+echo "Ghost migration for ${CUSTOMER} (${APPDOMAIN})..."
+echo "No automatic import is run here. Use Ghost Admin or ghost backup/export."
+echo "Prepared. Admin UI: https://${APPDOMAIN}/ghost"
