@@ -1,0 +1,276 @@
+#!/bin/bash
+# Prepare Matrix (Synapse + Element + well-known) data directories and configs.
+# Secrets are read from the persistent app.sh config and are never printed,
+# never regenerated if homeserver.yaml already exists, and never echoed.
+set -euo pipefail
+set +x
+
+CUSTOMER="!!CUSTOMER!!"
+APPDOMAIN="!!APPDOMAIN!!"
+DATA_DIR="!!DATA_DIR!!"
+COMPOSE_DIR="!!COMPOSE_DIR!!"
+STACKNAME="!!STACKNAME!!"
+CONFIG_FILE="/opt/docker-data/${CUSTOMER}/_config_/${STACKNAME}.env"
+
+SYNAPSE_HOST="matrix.${APPDOMAIN}"
+ELEMENT_HOST="chat.${APPDOMAIN}"
+SERVER_NAME="${APPDOMAIN}"
+PUBLIC_BASEURL="https://${SYNAPSE_HOST}/"
+SYNAPSE_IMAGE="matrixdotorg/synapse:v1.164.2"
+
+echo "Installing Matrix for ${CUSTOMER} (${APPDOMAIN})..."
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "ERROR: persistent config not found: $CONFIG_FILE" >&2
+    exit 1
+fi
+
+# Load only the two secrets we need. Do not source the whole file (it may
+# contain shell logic) and do not print values.
+load_config_value() {
+    local name="$1"
+    local line raw
+    line=$(grep -E "^${name}=" "$CONFIG_FILE" | tail -1 || true)
+    if [ -z "$line" ]; then
+        echo "ERROR: ${name} missing from persistent config" >&2
+        exit 1
+    fi
+    raw="${line#*=}"
+    raw="${raw%%#*}"
+    raw="${raw#"${raw%%[![:space:]]*}"}"
+    raw="${raw%"${raw##*[![:space:]]}"}"
+    if [[ "$raw" =~ ^\"(.*)\"$ ]]; then
+        raw="${BASH_REMATCH[1]}"
+    elif [[ "$raw" =~ ^\'(.*)\'$ ]]; then
+        raw="${BASH_REMATCH[1]}"
+    fi
+    if [ -z "$raw" ] || [[ "$raw" == *"!!"* ]]; then
+        echo "ERROR: ${name} is empty or still a placeholder" >&2
+        exit 1
+    fi
+    printf '%s' "$raw"
+}
+
+POSTGRES_PASSWORD="$(load_config_value SPRW_MATRIX_POSTGRES_PASSWORD)"
+REGISTRATION_SHARED_SECRET="$(load_config_value SPRW_MATRIX_REGISTRATION_SHARED_SECRET)"
+
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_mylampiphant_networks "$CUSTOMER"
+
+mkdir -p "$COMPOSE_DIR"
+mkdir -p "$DATA_DIR/postgres"
+mkdir -p "$DATA_DIR/synapse"
+mkdir -p "$DATA_DIR/element"
+mkdir -p "$DATA_DIR/wellknown/www/.well-known/matrix"
+
+# Official PostgreSQL Alpine runs as uid 70; official Synapse as uid 991.
+chown -R 70:70 "$DATA_DIR/postgres"
+
+# ------------------------------------------------------------------
+# homeserver.yaml and signing keys: generate once, never overwrite.
+# ------------------------------------------------------------------
+HOMESERVER_YAML="${DATA_DIR}/synapse/homeserver.yaml"
+if [ ! -f "$HOMESERVER_YAML" ]; then
+    echo "Generating initial Synapse config (server_name=${SERVER_NAME})..."
+    docker run --rm \
+        --user 991:991 \
+        -e SYNAPSE_SERVER_NAME="${SERVER_NAME}" \
+        -e SYNAPSE_REPORT_STATS=no \
+        -v "${DATA_DIR}/synapse:/data" \
+        "${SYNAPSE_IMAGE}" \
+        generate
+
+    if [ ! -f "$HOMESERVER_YAML" ]; then
+        echo "ERROR: Synapse generate did not create homeserver.yaml" >&2
+        exit 1
+    fi
+
+    # Merge our runtime settings into the generated file without replacing
+    # macaroon_secret_key, form_secret, or signing_key_path.
+    POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+    REGISTRATION_SHARED_SECRET="$REGISTRATION_SHARED_SECRET" \
+    SERVER_NAME="$SERVER_NAME" \
+    SYNAPSE_HOST="$SYNAPSE_HOST" \
+    PUBLIC_BASEURL="$PUBLIC_BASEURL" \
+    HOMESERVER_YAML="$HOMESERVER_YAML" \
+    python3 - <<'PY'
+import os, re, json
+from pathlib import Path
+
+path = Path(os.environ["HOMESERVER_YAML"])
+text = path.read_text(encoding="utf-8")
+
+def set_scalar(text, key, value, quote=True):
+    rendered = json.dumps(value) if quote else str(value)
+    pattern = re.compile(r"^" + re.escape(key) + r":\s*.*$", re.M)
+    repl = f"{key}: {rendered}"
+    if pattern.search(text):
+        return pattern.sub(repl, text, count=1)
+    return text.rstrip() + "\n\n" + repl + "\n"
+
+def replace_block(text, key, block):
+    # Replace a top-level YAML block (key: plus indented body) or append it.
+    pattern = re.compile(r"^" + re.escape(key) + r":(?:\n(?:[ \t].*)?)*", re.M)
+    if pattern.search(text):
+        return pattern.sub(block.rstrip(), text, count=1)
+    return text.rstrip() + "\n\n" + block + "\n"
+
+pg = os.environ["POSTGRES_PASSWORD"]
+secret = os.environ["REGISTRATION_SHARED_SECRET"]
+server = os.environ["SERVER_NAME"]
+pub = os.environ["PUBLIC_BASEURL"]
+
+text = set_scalar(text, "server_name", server)
+text = set_scalar(text, "public_baseurl", pub)
+text = set_scalar(text, "report_stats", "false", quote=False)
+text = set_scalar(text, "enable_registration", "false", quote=False)
+text = set_scalar(text, "allow_guest_access", "false", quote=False)
+text = set_scalar(text, "registration_shared_secret", secret)
+text = set_scalar(text, "pid_file", "/data/homeserver.pid")
+text = set_scalar(text, "media_store_path", "/data/media_store")
+text = set_scalar(text, "signing_key_path", f"/data/{server}.signing.key")
+text = set_scalar(text, "max_upload_size", "50M")
+
+# Keep macaroon_secret_key and form_secret from the official generate output.
+
+listeners = """listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+"""
+database = f"""database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: {json.dumps(pg)}
+    database: synapse
+    host: postgres
+    cp_min: 5
+    cp_max: 10
+"""
+redis = """redis:
+  enabled: true
+  host: redis
+  port: 6379
+"""
+trusted = """trusted_proxies:
+  - 127.0.0.1
+  - ::1
+  - 10.0.0.0/8
+  - 172.16.0.0/12
+  - 192.168.0.0/16
+  - fd00::/8
+"""
+
+text = replace_block(text, "listeners", listeners)
+text = replace_block(text, "database", database)
+text = replace_block(text, "redis", redis)
+text = replace_block(text, "trusted_proxies", trusted)
+
+path.write_text(text, encoding="utf-8")
+os.chmod(path, 0o640)
+PY
+    echo "homeserver.yaml prepared (secrets kept from generate + persistent config)."
+else
+    echo "homeserver.yaml already exists; leaving signing keys and secrets unchanged."
+fi
+
+mkdir -p "$DATA_DIR/synapse/media_store"
+chown -R 991:991 "$DATA_DIR/synapse"
+chmod 640 "$HOMESERVER_YAML" 2>/dev/null || true
+
+# ------------------------------------------------------------------
+# Element and well-known files contain no secrets and may be refreshed.
+# They must exist as files (not directories) before Docker bind-mounts them.
+# ------------------------------------------------------------------
+umask 022
+cat > "${DATA_DIR}/element/config.json" <<EOF
+{
+    "default_server_config": {
+        "m.homeserver": {
+            "base_url": "https://${SYNAPSE_HOST}",
+            "server_name": "${SERVER_NAME}"
+        },
+        "m.identity_server": {
+            "base_url": "https://vector.im"
+        }
+    },
+    "brand": "Element",
+    "default_country_code": "DE",
+    "disable_guests": true,
+    "disable_custom_urls": false,
+    "show_labs_settings": false
+}
+EOF
+chmod 644 "${DATA_DIR}/element/config.json"
+
+cat > "${DATA_DIR}/wellknown/www/.well-known/matrix/client" <<EOF
+{
+    "m.homeserver": {
+        "base_url": "https://${SYNAPSE_HOST}"
+    },
+    "m.identity_server": {
+        "base_url": "https://vector.im"
+    }
+}
+EOF
+
+cat > "${DATA_DIR}/wellknown/www/.well-known/matrix/server" <<EOF
+{
+    "m.server": "${SYNAPSE_HOST}:443"
+}
+EOF
+chmod 644 "${DATA_DIR}/wellknown/www/.well-known/matrix/client" \
+          "${DATA_DIR}/wellknown/www/.well-known/matrix/server"
+
+cat > "${DATA_DIR}/wellknown/nginx.conf" <<'EOF'
+server {
+    listen 80 default_server;
+    server_name _;
+
+    root /var/www;
+
+    location /.well-known/matrix/ {
+        default_type application/json;
+        add_header Access-Control-Allow-Origin * always;
+        add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "X-Requested-With, Content-Type, Authorization" always;
+        add_header Content-Type "application/json" always;
+    }
+
+    location = / {
+        return 204;
+    }
+}
+EOF
+chmod 644 "${DATA_DIR}/wellknown/nginx.conf"
+
+# Refuse to continue if a bind target is accidentally a directory (the old
+# Komodo files_on_host failure mode).
+for f in \
+    "${DATA_DIR}/element/config.json" \
+    "${DATA_DIR}/wellknown/nginx.conf" \
+    "${DATA_DIR}/wellknown/www/.well-known/matrix/client" \
+    "${DATA_DIR}/wellknown/www/.well-known/matrix/server"
+do
+    if [ -d "$f" ]; then
+        echo "ERROR: $f is a directory but must be a file. Remove it and re-run install." >&2
+        exit 1
+    fi
+    if [ ! -f "$f" ]; then
+        echo "ERROR: expected file missing: $f" >&2
+        exit 1
+    fi
+done
+
+echo "Installation files prepared."
+echo "Homeserver: https://${SYNAPSE_HOST}  (server_name=${SERVER_NAME})"
+echo "Element:    https://${ELEMENT_HOST}"
+echo "well-known: https://${SERVER_NAME}/.well-known/matrix/{client,server}"
+echo "Data:       ${DATA_DIR}"
+echo "Registration is disabled. Create users with register_new_matrix_user and the shared secret from the persistent config (do not print it)."

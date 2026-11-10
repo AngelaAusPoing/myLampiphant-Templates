@@ -1,0 +1,16 @@
+#!/bin/bash
+# Delete Matrix for !!CUSTOMER!! including all data. Do not print secrets.
+set -euo pipefail
+
+CUSTOMER="!!CUSTOMER!!"
+APPDOMAIN="!!APPDOMAIN!!"
+DATA_DIR="!!DATA_DIR!!"
+STACKNAME="!!STACKNAME!!"
+CONFIG_FILE="/opt/docker-data/${CUSTOMER}/_config_/${STACKNAME}.env"
+
+echo "Deleting Matrix for ${CUSTOMER} (${APPDOMAIN}) including all data..."
+
+rm -rf "$DATA_DIR"
+rm -f "$CONFIG_FILE"
+
+echo "Matrix completely deleted"

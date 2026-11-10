@@ -1,0 +1,34 @@
+# === myLampiphant variables ===
+# This file is sent to Komodo as the stack .env. Generated secrets belong here
+# and must not be committed. Passwords come from the persistent config
+# (!!POSTGRES_PASSWORD!! / !!REGISTRATION_SHARED_SECRET!!), never from !!NEW_PASSWORD!!.
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__APPDOMAIN=!!APPDOMAIN!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# Hostnames derived from the apex / homeserver name (APPDOMAIN)
+SPRW_MATRIX_SERVER_NAME=!!APPDOMAIN!!
+SPRW_MATRIX_SYNAPSE_HOST=matrix.!!APPDOMAIN!!
+SPRW_MATRIX_ELEMENT_HOST=chat.!!APPDOMAIN!!
+
+# === Images and memory limits (defaults; override in persistent config) ===
+SPRW_MATRIX_SYNAPSE_IMAGE=matrixdotorg/synapse:v1.164.2
+SPRW_MATRIX_ELEMENT_IMAGE=vectorim/element-web:v1.12.33
+SPRW_MATRIX_POSTGRES_IMAGE=postgres:16.15-alpine
+SPRW_MATRIX_REDIS_IMAGE=redis:7.4.12-alpine
+SPRW_MATRIX_WELLKNOWN_IMAGE=nginx:1.29-alpine
+SPRW_MATRIX_SYNAPSE_MEM_LIMIT=768m
+SPRW_MATRIX_POSTGRES_MEM_LIMIT=256m
+SPRW_MATRIX_REDIS_MEM_LIMIT=64m
+SPRW_MATRIX_ELEMENT_MEM_LIMIT=64m
+SPRW_MATRIX_WELLKNOWN_MEM_LIMIT=32m
+SPRW_MATRIX_TIMEZONE=Europe/Berlin
+
+# === Database ===
+SPRW_MATRIX_POSTGRES_DB=synapse
+SPRW_MATRIX_POSTGRES_USER=synapse
+SPRW_MATRIX_POSTGRES_PASSWORD=!!POSTGRES_PASSWORD!!
+
+# === Registration (disabled in homeserver.yaml; this shared secret is for
+# register_new_matrix_user / admin tooling only) ===
+SPRW_MATRIX_REGISTRATION_SHARED_SECRET=!!REGISTRATION_SHARED_SECRET!!

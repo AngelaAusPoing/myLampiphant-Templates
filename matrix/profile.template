@@ -1,0 +1,61 @@
+#!/bin/bash
+# Default variables for the app "matrix" (Synapse + PostgreSQL + Redis + Element + well-known)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files. Secrets are created with !!NEW_PASSWORD!! on first install
+# and must never be regenerated on update or redeploy.
+#
+# Install (several stacks per customer, one per homeserver domain):
+#   app.sh matrix add <customer> <apex-domain>
+#   example: app.sh matrix add lapha_de lapha.de
+#
+# The stack is named matrix_d_<domain_normalized>, e.g. matrix_d_lapha_de.
+# Homeserver names are @user:<apex-domain>. Synapse is served at matrix.<apex>,
+# Element at chat.<apex>, and /.well-known/matrix/* on the apex (high-priority
+# Traefik rule so it can coexist with a website on the same host).
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='matrix'
+SPRW__APP_PREFIX='MATRIX'
+
+# Global (customer/domain-specific values are !!PLACEHOLDER!!, filled by app.sh)
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # Homeserver name / apex domain (e.g. lapha.de)
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Images and memory limits (ARM64-verified pins; override in persistent config)
+SPRW_MATRIX_SYNAPSE_IMAGE='matrixdotorg/synapse:v1.164.2'
+SPRW_MATRIX_ELEMENT_IMAGE='vectorim/element-web:v1.12.33'
+SPRW_MATRIX_POSTGRES_IMAGE='postgres:16.15-alpine'
+SPRW_MATRIX_REDIS_IMAGE='redis:7.4.12-alpine'
+SPRW_MATRIX_WELLKNOWN_IMAGE='nginx:1.29-alpine'
+SPRW_MATRIX_SYNAPSE_MEM_LIMIT='768m'
+SPRW_MATRIX_POSTGRES_MEM_LIMIT='256m'
+SPRW_MATRIX_REDIS_MEM_LIMIT='64m'
+SPRW_MATRIX_ELEMENT_MEM_LIMIT='64m'
+SPRW_MATRIX_WELLKNOWN_MEM_LIMIT='32m'
+SPRW_MATRIX_TIMEZONE='Europe/Berlin'
+SPRW_MATRIX_POSTGRES_DB='synapse'
+SPRW_MATRIX_POSTGRES_USER='synapse'
+
+# Secrets: generated once into this config file, then reused.
+SPRW_MATRIX_POSTGRES_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_MATRIX_REGISTRATION_SHARED_SECRET="!!NEW_PASSWORD!!"
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__VOLUME_MODE" ] || [ "$SPRW__VOLUME_MODE" = '!!VOLUME_MODE!!' ]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [ "$SPRW__HTTP_REDIRECT" = '!!HTTP_REDIRECT!!' ]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [ "$SPRW__LETSENCRYPT_METHOD" = '!!LETSENCRYPT_METHOD!!' ]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [ "$SPRW__EXTERNAL_ACCESS" = '!!EXTERNAL_ACCESS!!' ]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
