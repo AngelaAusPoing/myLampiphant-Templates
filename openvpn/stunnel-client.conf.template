@@ -1,0 +1,17 @@
+; myLampiphant OpenVPN TLS wrapper (client template)
+; ovpnadmin.sh export-client writes a filled copy next to the .ovpn profile.
+; Placeholders: !!OVPN_HOSTNAME!!  !!OVPN_STUNNEL_LOCAL_PORT!!
+client = yes
+foreground = no
+
+[openvpn]
+accept = 127.0.0.1:!!OVPN_STUNNEL_LOCAL_PORT!!
+connect = !!OVPN_HOSTNAME!!:443
+sni = !!OVPN_HOSTNAME!!
+verifyChain = yes
+checkHost = !!OVPN_HOSTNAME!!
+; Uncomment exactly one CAfile line for this machine (required for verifyChain):
+; CAfile = /etc/ssl/certs/ca-certificates.crt
+; CAfile = /etc/pki/tls/certs/ca-bundle.crt
+; CAfile = /etc/ssl/cert.pem
+; CAfile = C:\Program Files\stunnel\certs\ca-certs.pem

@@ -5,23 +5,25 @@
 # BEFORE the stack is deployed via Komodo.
 # Idempotent: existing vpn.env and PKI data are never overwritten.
 # Secrets (PKI, client certs) are never printed. This script does not
-# change Traefik, host port 443, or sslh. ufw is only opened for the
-# UDP listen port when transport is udp1194.
+# change Traefik's static config, host port 443, or sslh. ufw is only
+# opened for the UDP listen port when transport is udp1194.
 set -euo pipefail
 
 SPRW__CUSTOMER="!!CUSTOMER!!"
 SPRW__STACKNAME="!!STACKNAME!!"
 SPRW__DATA_DIR="!!DATA_DIR!!"
 SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
+SPRW__LETSENCRYPT_METHOD="!!LETSENCRYPT_METHOD!!"
 SPRW_OVPN_IMAGE="!!OVPN_IMAGE!!"
 SPRW_OVPN_TRANSPORT="!!OVPN_TRANSPORT!!"
 SPRW_OVPN_PORT="!!OVPN_PORT!!"
 SPRW_OVPN_BACKEND_PORT="!!OVPN_BACKEND_PORT!!"
 SPRW_OVPN_MEM_LIMIT="!!OVPN_MEM_LIMIT!!"
-# Endpoint and subnet are computed (or loaded from the persistent
+# Endpoint, hostname and subnet are computed (or loaded from the persistent
 # config) below. Do not pull them through !!placeholders!! here: app.sh may
 # substitute a circular $SPRW_OVPN_* reference and break set -u.
 SPRW_OVPN_ENDPOINT=""
+SPRW_OVPN_HOSTNAME=""
 SPRW_OVPN_SUBNET_INDEX=""
 SPRW_OVPN_IPV4_CIDR=""
 SPRW_OVPN_DNS="!!OVPN_DNS!!"
@@ -56,9 +58,19 @@ if [ "$SPRW__CUSTOMER" = "_host_" ]; then
     exit 1
 fi
 case "$SPRW_OVPN_TRANSPORT" in
-    udp1194|tcp443_sslh) ;;
+    udp1194|tcp443_tls) ;;
     *)
-        echo "ERROR: OVPN_TRANSPORT must be udp1194 or tcp443_sslh (got: ${SPRW_OVPN_TRANSPORT})." >&2
+        echo "ERROR: OVPN_TRANSPORT must be udp1194 or tcp443_tls (got: ${SPRW_OVPN_TRANSPORT})." >&2
+        exit 1
+        ;;
+esac
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+    SPRW__LETSENCRYPT_METHOD=acme
+fi
+case "$SPRW__LETSENCRYPT_METHOD" in
+    acme|dns01) ;;
+    *)
+        echo "ERROR: LETSENCRYPT_METHOD must be acme or dns01 (got: ${SPRW__LETSENCRYPT_METHOD})." >&2
         exit 1
         ;;
 esac
@@ -80,6 +92,7 @@ load_cfg_if_set() {
     fi
 }
 load_cfg_if_set SPRW_OVPN_ENDPOINT SPRW_OVPN_ENDPOINT
+load_cfg_if_set SPRW_OVPN_HOSTNAME SPRW_OVPN_HOSTNAME
 load_cfg_if_set SPRW_OVPN_SUBNET_INDEX SPRW_OVPN_SUBNET_INDEX
 load_cfg_if_set SPRW_OVPN_IPV4_CIDR SPRW_OVPN_IPV4_CIDR
 
@@ -115,6 +128,17 @@ cidr_to_netmask() {
     printf '%d.%d.%d.%d' \
         $(( (mask >> 24) & 255 )) $(( (mask >> 16) & 255 )) \
         $(( (mask >> 8) & 255 )) $(( mask & 255 ))
+}
+
+read_profile_var() {
+    # Read a simple KEY=value from customer_profile.sh. Never prints the file.
+    local file="$1"
+    local key="$2"
+    if [ ! -f "$file" ]; then
+        return 0
+    fi
+    grep -E "^(export[[:space:]]+)?${key}=" "$file" | head -1 | cut -d= -f2- \
+        | tr -d '"'\''[:space:]'
 }
 
 # ---------------------------------------------------------------------------
@@ -219,12 +243,12 @@ upsert_cfg SPRW_OVPN_SUBNET_INDEX "$SPRW_OVPN_SUBNET_INDEX"
 upsert_cfg SPRW_OVPN_IPV4_CIDR "$SPRW_OVPN_IPV4_CIDR"
 
 # ---------------------------------------------------------------------------
-# 5. Endpoint (public address clients connect to)
+# 5. Endpoint and TLS hostname
 # ---------------------------------------------------------------------------
+CUST_PROFILE="$(dirname "$SPRW__DATA_DIR")/customer_profile.sh"
 if [ -z "$SPRW_OVPN_ENDPOINT" ] || [[ "$SPRW_OVPN_ENDPOINT" == *'!!'* ]]; then
-    cust_profile="$(dirname "$SPRW__DATA_DIR")/customer_profile.sh"
-    if [ -f "$cust_profile" ]; then
-        SPRW_OVPN_ENDPOINT="$(grep -E '^export HOST_IPv4=' "$cust_profile" | head -1 | cut -d= -f2- | tr -d '"'\''[:space:]')"
+    if [ -f "$CUST_PROFILE" ]; then
+        SPRW_OVPN_ENDPOINT="$(read_profile_var "$CUST_PROFILE" HOST_IPv4 || true)"
     fi
 fi
 if [ -z "$SPRW_OVPN_ENDPOINT" ] || [[ "$SPRW_OVPN_ENDPOINT" == *'!!'* ]]; then
@@ -236,6 +260,35 @@ if [ -z "$SPRW_OVPN_ENDPOINT" ]; then
 fi
 upsert_cfg SPRW_OVPN_ENDPOINT "$SPRW_OVPN_ENDPOINT"
 
+if [ -z "$SPRW_OVPN_HOSTNAME" ] || [[ "$SPRW_OVPN_HOSTNAME" == *'!!'* ]]; then
+    cust_domain=""
+    if [ -f "$CUST_PROFILE" ]; then
+        cust_domain="$(read_profile_var "$CUST_PROFILE" DOMAIN || true)"
+    fi
+    if [ -n "$cust_domain" ] && [[ "$cust_domain" != *'!!'* ]]; then
+        SPRW_OVPN_HOSTNAME="vpn.${cust_domain}"
+    fi
+fi
+if [ "$SPRW_OVPN_TRANSPORT" = "tcp443_tls" ]; then
+    if [ -z "$SPRW_OVPN_HOSTNAME" ] || [[ "$SPRW_OVPN_HOSTNAME" == *'!!'* ]]; then
+        echo "ERROR: OVPN_HOSTNAME is required for tcp443_tls (e.g. vpn.example.com). Set it in the persistent config or pass --var OVPN_HOSTNAME=..." >&2
+        exit 1
+    fi
+    if printf '%s' "$SPRW_OVPN_HOSTNAME" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
+        echo "ERROR: OVPN_HOSTNAME must be a DNS name, not an IP (Traefik HostSNI and Let's Encrypt need a hostname)." >&2
+        exit 1
+    fi
+    upsert_cfg SPRW_OVPN_HOSTNAME "$SPRW_OVPN_HOSTNAME"
+    upsert_cfg SPRW__LETSENCRYPT_METHOD "$SPRW__LETSENCRYPT_METHOD"
+    echo "TLS hostname for Traefik HostSNI: ${SPRW_OVPN_HOSTNAME}"
+    echo "Note: create a DNS A/AAAA record for ${SPRW_OVPN_HOSTNAME} pointing at this host before deploy."
+    echo "      Let's Encrypt HTTP-01 uses Traefik on port 80 (certresolver=${SPRW__LETSENCRYPT_METHOD})."
+    echo "      This script does not change Traefik's static config, host port 443, or the firewall."
+    if [ "$SPRW__LETSENCRYPT_METHOD" = "dns01" ]; then
+        echo "Note: dns01 requires a Traefik certificatesResolver named letsencrypt-dns (not added by this template)."
+    fi
+fi
+
 # ---------------------------------------------------------------------------
 # 6. Port clash checks. Never bind or inspect host 443 as if we owned it.
 # ---------------------------------------------------------------------------
@@ -246,13 +299,9 @@ if [ "$SPRW_OVPN_TRANSPORT" = "udp1194" ]; then
         exit 1
     fi
 else
-    tcp_conflict="$(ss -lnt | awk -v p="127.0.0.1:${SPRW_OVPN_BACKEND_PORT}" '$4 == p {print; exit}')"
-    if [ -n "$tcp_conflict" ]; then
-        echo "ERROR: TCP port 127.0.0.1:${SPRW_OVPN_BACKEND_PORT} is already in use. Set OVPN_BACKEND_PORT to a free localhost port." >&2
-        exit 1
-    fi
-    echo "Note: tcp443_sslh will listen on container TCP 443 and bind only 127.0.0.1:${SPRW_OVPN_BACKEND_PORT} on the host."
-    echo "      Public TCP 443, Traefik and sslh are left unchanged. Sharing 443 needs a maintenance window and Angela's approval."
+    echo "Note: tcp443_tls will listen on container TCP ${SPRW_OVPN_PORT} only (no host port)."
+    echo "      Traefik (already on public 443) will terminate TLS for ${SPRW_OVPN_HOSTNAME} and forward TCP."
+    echo "      Public TCP 443, Traefik static config and the firewall are left unchanged."
 fi
 
 # ---------------------------------------------------------------------------
@@ -264,14 +313,20 @@ for f in entrypoint.sh openvpn-shim.sh patch-config.sh ovpn-firewall.sh; do
     cp -a "$TEMPLATE_DIR/$f" "$SPRW__DATA_DIR/scripts/$f"
     chmod 755 "$SPRW__DATA_DIR/scripts/$f"
 done
+for f in CLIENT-TLS.md stunnel-client.conf.template; do
+    if [ -f "$TEMPLATE_DIR/$f" ]; then
+        cp -a "$TEMPLATE_DIR/$f" "$SPRW__DATA_DIR/scripts/$f"
+        chmod 644 "$SPRW__DATA_DIR/scripts/$f"
+    fi
+done
 
 OVPN_NET="${SPRW_OVPN_IPV4_CIDR%/*}"
 OVPN_MASK="$(cidr_to_netmask "$SPRW_OVPN_IPV4_CIDR")"
 CUSTOMER_NET_ADDR="${CUSTOMER_CIDR%/*}"
 CUSTOMER_MASK="$(cidr_to_netmask "$CUSTOMER_CIDR")"
-if [ "$SPRW_OVPN_TRANSPORT" = "tcp443_sslh" ]; then
+if [ "$SPRW_OVPN_TRANSPORT" = "tcp443_tls" ]; then
     OVPN_PROTO=tcp
-    OVPN_LISTEN_PORT=443
+    OVPN_LISTEN_PORT="$SPRW_OVPN_PORT"
 else
     OVPN_PROTO=udp
     OVPN_LISTEN_PORT="$SPRW_OVPN_PORT"
@@ -279,7 +334,7 @@ fi
 
 umask 077
 cat > "$SPRW__DATA_DIR/scripts/firewall.conf" <<FCONF
-# Written by install.sh; sourced inside the container. No secrets.
+# Written by install.sh; sourced inside the container and by ovpnadmin.sh. No secrets.
 OVPN_IF=tun0
 OVPN_CIDR=${SPRW_OVPN_IPV4_CIDR}
 OVPN_NET=${OVPN_NET}
@@ -289,6 +344,9 @@ CUSTOMER_NET=${CUSTOMER_NET_ADDR}
 CUSTOMER_MASK=${CUSTOMER_MASK}
 OVPN_PORT=${OVPN_LISTEN_PORT}
 OVPN_PROTO=${OVPN_PROTO}
+OVPN_TRANSPORT=${SPRW_OVPN_TRANSPORT}
+OVPN_HOSTNAME=${SPRW_OVPN_HOSTNAME}
+OVPN_CLIENT_NAME=${SPRW_OVPN_CLIENT_NAME}
 FCONF
 chmod 600 "$SPRW__DATA_DIR/scripts/firewall.conf"
 
@@ -299,7 +357,9 @@ DNS1="$(echo "$SPRW_OVPN_DNS" | cut -d, -f1 | tr -d '[:space:]')"
 DNS2="$(echo "$SPRW_OVPN_DNS" | cut -d, -f2 | tr -d '[:space:]')"
 [ -n "$DNS2" ] || DNS2="$DNS1"
 
-# vpn.env: IP vs FQDN for the client "remote" line
+# vpn.env: IP vs FQDN for the client "remote" line (udp1194). tcp443_tls
+# always uses the TLS hostname; ovpnadmin.sh rewrites the exported profile
+# to 127.0.0.1 plus a stunnel client config.
 ENDPOINT_IS_IP=0
 if printf '%s' "$SPRW_OVPN_ENDPOINT" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
     ENDPOINT_IS_IP=1
@@ -314,7 +374,9 @@ if [ ! -f "$SPRW__DATA_DIR/secrets/vpn.env" ]; then
         echo "VPN_DNS_SRV1=${DNS1}"
         echo "VPN_DNS_SRV2=${DNS2}"
         echo "VPN_DISABLE_USAGE_COUNTS=1"
-        if [ "$ENDPOINT_IS_IP" -eq 1 ]; then
+        if [ "$SPRW_OVPN_TRANSPORT" = "tcp443_tls" ]; then
+            echo "VPN_DNS_NAME=${SPRW_OVPN_HOSTNAME}"
+        elif [ "$ENDPOINT_IS_IP" -eq 1 ]; then
             echo "VPN_PUBLIC_IP=${SPRW_OVPN_ENDPOINT}"
         else
             echo "VPN_DNS_NAME=${SPRW_OVPN_ENDPOINT}"
@@ -346,9 +408,11 @@ echo "🌐 Client subnet: ${SPRW_OVPN_IPV4_CIDR} (index ${SPRW_OVPN_SUBNET_INDEX
 if [ "$SPRW_OVPN_TRANSPORT" = "udp1194" ]; then
     echo "🔌 Transport: UDP ${SPRW_OVPN_PORT} on the host"
 else
-    echo "🔌 Transport: TCP 443 in the container, host 127.0.0.1:${SPRW_OVPN_BACKEND_PORT} only"
-    echo "   Public 443 / sslh / Traefik were not changed."
+    echo "🔌 Transport: TCP ${SPRW_OVPN_PORT} in the container; Traefik TLS at ${SPRW_OVPN_HOSTNAME}:443"
+    echo "   Public 443 / Traefik static config / firewall were not changed."
+    echo "   After deploy: ovpnadmin.sh add-client <name>  and  ovpnadmin.sh export-client <name> <dir>"
+    echo "   export-client writes a stunnel + OpenVPN bundle. Standard OpenVPN clients cannot wrap TLS themselves."
 fi
 echo "🧭 Clients reach: this customer's network ${CUSTOMER_NET} (${CUSTOMER_CIDR}) and the VPN subnet (split-tunnel)."
 echo "🔒 After deploy: ovpnadmin.sh add-client <name>  and  ovpnadmin.sh export-client <name> <dir>"
-echo "   The image also creates a first client named ${SPRW_OVPN_CLIENT_NAME}; export or revoke it on purpose. Configs are never printed."
+echo "   The image also creates a first client named ${SPRW_OVPN_CLIENT_NAME}; add-client on a named cert revokes it automatically (or run ovpnadmin.sh revoke-initial). Configs are never printed."

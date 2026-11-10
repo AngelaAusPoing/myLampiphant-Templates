@@ -7,24 +7,68 @@ set -euo pipefail
 SPRW__CUSTOMER="!!CUSTOMER!!"
 SPRW__STACKNAME="!!STACKNAME!!"
 SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW_OVPN_TRANSPORT="!!OVPN_TRANSPORT!!"
+SPRW_OVPN_HOSTNAME="!!OVPN_HOSTNAME!!"
+SPRW_OVPN_CLIENT_NAME="!!OVPN_CLIENT_NAME!!"
+# Local stunnel accept port on the client (OpenVPN then connects to 127.0.0.1).
+# Not used for udp1194.
+OVPN_STUNNEL_LOCAL_PORT="14194"
 
 usage() {
     cat <<USAGE
 Usage: ovpnadmin.sh <command> [args]
 
   add-client <name>          Create a client certificate (no-op if it exists).
+                             After the first named client (not "${SPRW_OVPN_CLIENT_NAME:-initial}")
+                             is created, the auto-created first cert is revoked.
   export-client <name> <dir> Copy <name>.ovpn into <dir> (chmod 600). Never printed.
+                             For tcp443_tls also writes a stunnel client config and README.
   revoke-client <name>       Revoke a client certificate (no confirmation prompt).
+  revoke-initial             Revoke the auto-created first cert (${SPRW_OVPN_CLIENT_NAME:-initial})
+                             if at least one other issued client exists.
   list                       List client names (no keys).
   status                     Show container / tun / listen settings (no secrets).
 
 The image creates one first client (see OVPN_CLIENT_NAME in the persistent
-config, default "initial") on the first start. Export or revoke it on purpose.
+config, default "initial") on the first start. After you add a named client,
+that first cert is revoked automatically. You can also run revoke-initial.
 USAGE
+}
+
+load_runtime_conf() {
+    local conf="${SPRW__DATA_DIR}/scripts/firewall.conf"
+    if [ -f "$conf" ]; then
+        # shellcheck disable=SC1090
+        . "$conf"
+    fi
+    if [ -z "${SPRW_OVPN_TRANSPORT:-}" ] || [[ "${SPRW_OVPN_TRANSPORT}" == *'!!'* ]]; then
+        SPRW_OVPN_TRANSPORT="${OVPN_TRANSPORT:-}"
+    fi
+    if [ -z "${SPRW_OVPN_HOSTNAME:-}" ] || [[ "${SPRW_OVPN_HOSTNAME}" == *'!!'* ]]; then
+        SPRW_OVPN_HOSTNAME="${OVPN_HOSTNAME:-}"
+    fi
+    if [ -z "${SPRW_OVPN_CLIENT_NAME:-}" ] || [[ "${SPRW_OVPN_CLIENT_NAME}" == *'!!'* ]]; then
+        SPRW_OVPN_CLIENT_NAME="${OVPN_CLIENT_NAME:-initial}"
+    fi
+    : "${SPRW_OVPN_CLIENT_NAME:=initial}"
 }
 
 container_running() {
     docker inspect "$SPRW__STACKNAME" >/dev/null 2>&1
+}
+
+issued_crt() {
+    local name="$1"
+    docker exec "$SPRW__STACKNAME" test -f "/etc/openvpn/server/easy-rsa/pki/issued/${name}.crt"
+}
+
+count_other_issued() {
+    local first="$1"
+    # Names only, never print cert material. Exclude the auto-created first cert
+    # and the CA/server certs if they appear in issued/.
+    docker exec "$SPRW__STACKNAME" sh -c \
+        "ls /etc/openvpn/server/easy-rsa/pki/issued/*.crt 2>/dev/null | xargs -n1 basename | sed 's/\\.crt\$//' | grep -v -E -x 'ca|server|${first}' | wc -l" \
+        | tr -d '[:space:]'
 }
 
 cmd_list() {
@@ -45,15 +89,108 @@ cmd_add_client() {
         echo "ERROR: container ${SPRW__STACKNAME} is not running." >&2
         exit 1
     fi
-    if docker exec "$SPRW__STACKNAME" test -f "/etc/openvpn/server/easy-rsa/pki/issued/${name}.crt"; then
+    load_runtime_conf
+    local created=0
+    if issued_crt "$name"; then
         echo "Client ${name} already exists."
-        return 0
+    else
+        if ! docker exec "$SPRW__STACKNAME" ovpn_manage --addclient "$name"; then
+            echo "ERROR: failed to create client ${name} (details not re-printed if they might contain secrets)." >&2
+            exit 1
+        fi
+        echo "Created client ${name}."
+        created=1
     fi
-    if ! docker exec "$SPRW__STACKNAME" ovpn_manage --addclient "$name"; then
-        echo "ERROR: failed to create client ${name} (details not re-printed if they might contain secrets)." >&2
-        exit 1
+    # Revoke the auto-created first cert after the first named client exists.
+    if [ "$name" != "$SPRW_OVPN_CLIENT_NAME" ]; then
+        if issued_crt "$SPRW_OVPN_CLIENT_NAME"; then
+            echo "Revoking auto-created client ${SPRW_OVPN_CLIENT_NAME} (policy: revoke after the first named client)."
+            if ! cmd_revoke_initial_inner; then
+                echo "WARNING: client ${name} is available, but ${SPRW_OVPN_CLIENT_NAME} could not be revoked. Run: ovpnadmin.sh revoke-initial" >&2
+            fi
+        elif [ "$created" -eq 1 ]; then
+            echo "Auto-created client ${SPRW_OVPN_CLIENT_NAME} is already absent."
+        fi
     fi
-    echo "Created client ${name}."
+}
+
+write_tls_bundle() {
+    local name="$1"
+    local conf="$2"
+    local dest="$3"
+    local host="$SPRW_OVPN_HOSTNAME"
+    local lport="$OVPN_STUNNEL_LOCAL_PORT"
+    if [ -z "$host" ] || [[ "$host" == *'!!'* ]]; then
+        echo "ERROR: OVPN_HOSTNAME is not set; cannot write the TLS wrapper bundle." >&2
+        return 1
+    fi
+
+    # Rewrite the profile so OpenVPN talks to local stunnel, not to :443 directly.
+    # Do not print the file (it contains certificates and keys).
+    if ! grep -qE '^remote ' "$conf"; then
+        echo "ERROR: client profile has no remote line (not printed)." >&2
+        return 1
+    fi
+    sed -i -E \
+        -e "s/^remote .*/remote 127.0.0.1 ${lport}/" \
+        -e "s/^proto .*/proto tcp/" \
+        "$conf"
+    if ! grep -q '^proto tcp$' "$conf"; then
+        # Image profiles sometimes omit proto; insert after the first remote line.
+        sed -i -E "/^remote /a proto tcp" "$conf"
+    fi
+    # Comment only (no secrets) so the file explains the wrapper.
+    if ! grep -q 'myLampiphant TLS wrapper' "$conf"; then
+        sed -i "1i# myLampiphant TLS wrapper: start stunnel with ${name}-stunnel.conf, then connect this profile to 127.0.0.1:${lport}." "$conf"
+    fi
+    chmod 600 "$conf"
+
+    local stunnel="${dest}/${name}-stunnel.conf"
+    umask 077
+    cat > "$stunnel" <<STUNNEL
+; myLampiphant OpenVPN TLS wrapper (client) for ${name}
+; Start stunnel with this file, then start OpenVPN with ${name}.ovpn.
+; Standard OpenVPN clients cannot wrap the session in TLS themselves.
+client = yes
+foreground = no
+
+[openvpn]
+accept = 127.0.0.1:${lport}
+connect = ${host}:443
+sni = ${host}
+verifyChain = yes
+checkHost = ${host}
+; Uncomment exactly one CAfile line for this machine (required for verifyChain):
+; Linux (Debian/Ubuntu):
+; CAfile = /etc/ssl/certs/ca-certificates.crt
+; Linux (RHEL/Fedora):
+; CAfile = /etc/pki/tls/certs/ca-bundle.crt
+; macOS:
+; CAfile = /etc/ssl/cert.pem
+; Windows (PEM CA bundle, e.g. the Mozilla bundle shipped with stunnel):
+; CAfile = C:\\Program Files\\stunnel\\certs\\ca-certs.pem
+STUNNEL
+    chmod 600 "$stunnel"
+
+    local readme="${dest}/${name}-TLS-README.txt"
+    local src_readme="${SPRW__DATA_DIR}/scripts/CLIENT-TLS.md"
+    umask 022
+    {
+        echo "OpenVPN TLS bundle for client: ${name}"
+        echo "Public endpoint: ${host}:443 (Traefik terminates TLS, then plain OpenVPN TCP)."
+        echo "Local wrapper: stunnel listens on 127.0.0.1:${lport}"
+        echo "Files: ${name}.ovpn , ${name}-stunnel.conf , this README."
+        echo "Contents of the .ovpn file are not repeated here (they contain secrets)."
+        echo
+        if [ -f "$src_readme" ]; then
+            sed -e "s/!!OVPN_HOSTNAME!!/${host}/g" \
+                -e "s/!!OVPN_STUNNEL_LOCAL_PORT!!/${lport}/g" \
+                -e "s/!!CLIENT_NAME!!/${name}/g" \
+                "$src_readme"
+        fi
+    } > "$readme"
+    chmod 644 "$readme"
+    echo "Wrote TLS bundle under ${dest}: ${name}.ovpn, ${name}-stunnel.conf, ${name}-TLS-README.txt (profiles not printed)."
 }
 
 cmd_export_client() {
@@ -67,6 +204,7 @@ cmd_export_client() {
         echo "ERROR: container ${SPRW__STACKNAME} is not running." >&2
         exit 1
     fi
+    load_runtime_conf
     mkdir -p "$dest"
     chmod 700 "$dest"
     if ! docker exec "$SPRW__STACKNAME" test -f "/etc/openvpn/clients/${name}.ovpn"; then
@@ -92,7 +230,14 @@ cmd_export_client() {
         exit 1
     fi
     chmod 600 "$conf"
-    echo "Wrote ${name}.ovpn under ${dest} (chmod 600). Contents not printed."
+    if [ "$SPRW_OVPN_TRANSPORT" = "tcp443_tls" ]; then
+        if ! write_tls_bundle "$name" "$conf" "$dest"; then
+            rm -f "$conf"
+            exit 1
+        fi
+    else
+        echo "Wrote ${name}.ovpn under ${dest} (chmod 600). Contents not printed."
+    fi
 }
 
 cmd_revoke_client() {
@@ -105,6 +250,7 @@ cmd_revoke_client() {
         echo "ERROR: container ${SPRW__STACKNAME} is not running." >&2
         exit 1
     fi
+    load_runtime_conf
     if ! docker exec "$SPRW__STACKNAME" ovpn_manage --revokeclient "$name" -y; then
         echo "ERROR: failed to revoke client ${name}." >&2
         exit 1
@@ -112,13 +258,46 @@ cmd_revoke_client() {
     echo "Revoked client ${name}."
 }
 
+cmd_revoke_initial_inner() {
+    local first="${SPRW_OVPN_CLIENT_NAME:-initial}"
+    if ! issued_crt "$first"; then
+        echo "Client ${first} is not present (already revoked or never issued)."
+        return 0
+    fi
+    local others
+    others="$(count_other_issued "$first" || echo 0)"
+    if [ -z "$others" ] || [ "$others" -lt 1 ]; then
+        echo "ERROR: refusing to revoke ${first}: no other issued client certificate found. Add a named client first." >&2
+        return 1
+    fi
+    if ! docker exec "$SPRW__STACKNAME" ovpn_manage --revokeclient "$first" -y; then
+        echo "ERROR: failed to revoke client ${first}." >&2
+        return 1
+    fi
+    echo "Revoked auto-created client ${first}."
+}
+
+cmd_revoke_initial() {
+    if ! container_running; then
+        echo "ERROR: container ${SPRW__STACKNAME} is not running." >&2
+        exit 1
+    fi
+    load_runtime_conf
+    cmd_revoke_initial_inner
+}
+
 cmd_status() {
+    load_runtime_conf
     echo "stack: ${SPRW__STACKNAME}"
     echo "customer: ${SPRW__CUSTOMER}"
     echo "data: ${SPRW__DATA_DIR}"
+    echo "transport: ${SPRW_OVPN_TRANSPORT:-unknown}"
+    if [ "${SPRW_OVPN_TRANSPORT:-}" = "tcp443_tls" ]; then
+        echo "tls-hostname: ${SPRW_OVPN_HOSTNAME}"
+    fi
     if [ -f "$SPRW__DATA_DIR/scripts/firewall.conf" ]; then
         # Print only non-secret topology fields already in firewall.conf.
-        grep -E '^(OVPN_CIDR|CUSTOMER_CIDR|OVPN_PORT|OVPN_PROTO)=' "$SPRW__DATA_DIR/scripts/firewall.conf" || true
+        grep -E '^(OVPN_CIDR|CUSTOMER_CIDR|OVPN_PORT|OVPN_PROTO|OVPN_TRANSPORT|OVPN_HOSTNAME)=' "$SPRW__DATA_DIR/scripts/firewall.conf" || true
     fi
     if container_running; then
         docker inspect "$SPRW__STACKNAME" | jq -r '"container: " + .[0].State.Status + " health=" + (.[0].State.Health.Status // "n/a")'
@@ -131,11 +310,12 @@ cmd_status() {
 cmd="${1:-}"
 shift || true
 case "$cmd" in
-    add-client)    cmd_add_client "$@" ;;
-    export-client) cmd_export_client "$@" ;;
-    revoke-client) cmd_revoke_client "$@" ;;
-    list)          cmd_list "$@" ;;
-    status)        cmd_status "$@" ;;
+    add-client)      cmd_add_client "$@" ;;
+    export-client)   cmd_export_client "$@" ;;
+    revoke-client)   cmd_revoke_client "$@" ;;
+    revoke-initial)  cmd_revoke_initial "$@" ;;
+    list)            cmd_list "$@" ;;
+    status)          cmd_status "$@" ;;
     -h|--help|help|"") usage ;;
     *) echo "ERROR: unknown command ${cmd}" >&2; usage; exit 1 ;;
 esac

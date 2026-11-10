@@ -7,13 +7,15 @@
 #
 # Install (0-1 stacks per customer; optional, independently of WireGuard):
 #   app.sh openvpn add <customer>
-#   app.sh openvpn add <customer> --var OVPN_TRANSPORT=tcp443_sslh --var OVPN_SUBNET_INDEX=2
+#   app.sh openvpn add <customer> --var OVPN_TRANSPORT=tcp443_tls --var OVPN_HOSTNAME=vpn.example.com
 #
 # The stack is named openvpn_c_<customer>.
 # udp1194 publishes UDP !!OVPN_PORT!! on the host.
-# tcp443_sslh listens on TCP 443 in the container and publishes only
-# 127.0.0.1:!!OVPN_BACKEND_PORT!!. Public TCP 443 / sslh / Traefik are not
-# changed by this app; wiring them needs a maintenance window and Angela's approval.
+# tcp443_tls: OpenVPN listens on TCP !!OVPN_PORT!! in the container only.
+# Traefik terminates TLS on websecure (already public 443) for HostSNI of
+# !!OVPN_HOSTNAME!! (default vpn.<customer DOMAIN>) and forwards plain TCP.
+# Clients need a stunnel (or similar) TLS wrapper. This app does not change
+# Traefik's static config, host port 443, or the firewall for 443.
 
 # The following variables are read by app.sh
 SPRW__APP_NAME='openvpn'
@@ -22,18 +24,21 @@ SPRW__APP_PREFIX='OVPN'
 # Global
 SPRW__VOLUME_MODE='!!VOLUME_MODE!!'
 SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'  # acme | dns01  (used by tcp443_tls Traefik TCP router)
 
 # App-specific variables (SPRW_OVPN_*)
+# Docusaurus / option buttons: OVPN_TRANSPORT enum is udp1194 | tcp443_tls (default udp1194)
 SPRW_OVPN_IMAGE='!!OVPN_IMAGE!!'                 # pinned multi-arch digest, arm64-verified
-SPRW_OVPN_TRANSPORT='!!OVPN_TRANSPORT!!'         # udp1194 | tcp443_sslh
-SPRW_OVPN_PORT='!!OVPN_PORT!!'                   # host/container UDP listen port (udp1194)
-SPRW_OVPN_BACKEND_PORT='!!OVPN_BACKEND_PORT!!'   # localhost TCP port mapped to container 443 (tcp443_sslh)
+SPRW_OVPN_TRANSPORT='!!OVPN_TRANSPORT!!'         # udp1194 | tcp443_tls
+SPRW_OVPN_PORT='!!OVPN_PORT!!'                   # container listen port; also host UDP port when udp1194 (default 1194)
+SPRW_OVPN_BACKEND_PORT='!!OVPN_BACKEND_PORT!!'   # unused for tcp443_tls (kept so older notes/configs still parse)
+SPRW_OVPN_HOSTNAME='!!OVPN_HOSTNAME!!'           # public TLS name for tcp443_tls (default vpn.<DOMAIN>); unused for udp1194
 SPRW_OVPN_MEM_LIMIT='!!OVPN_MEM_LIMIT!!'         # compose mem_limit (e.g. 256m)
-SPRW_OVPN_ENDPOINT='!!OVPN_ENDPOINT!!'           # public host clients connect to (IP or FQDN)
+SPRW_OVPN_ENDPOINT='!!OVPN_ENDPOINT!!'           # public host clients connect to (IP or FQDN); udp1194, and fallback
 SPRW_OVPN_SUBNET_INDEX='!!OVPN_SUBNET_INDEX!!'   # <n> in 10.51.<n>.0/24; shared with WireGuard; auto-allocated if empty
 SPRW_OVPN_IPV4_CIDR='!!OVPN_IPV4_CIDR!!'         # OpenVPN client subnet, e.g. 10.51.1.0/24
 SPRW_OVPN_DNS='!!OVPN_DNS!!'                     # comma-separated resolvers for clients (two used)
-SPRW_OVPN_CLIENT_NAME='!!OVPN_CLIENT_NAME!!'     # first client cert the image creates on first start
+SPRW_OVPN_CLIENT_NAME='!!OVPN_CLIENT_NAME!!'     # first client cert the image creates on first start (revoked after first named client)
 SPRW_OVPN_TIMEZONE='!!TIMEZONE!!'
 
 # ------------------------------------------------------------------------------------------------
@@ -43,6 +48,9 @@ if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
 fi
 if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
 	SPRW__EXTERNAL_ACCESS=false
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
 fi
 if [ -z "$SPRW_OVPN_IMAGE" ] || [[ "$SPRW_OVPN_IMAGE" == *'!!'* ]]; then
 	SPRW_OVPN_IMAGE=hwdsl2/openvpn-server:latest@sha256:5b47bd53222328322f2af9984acfe42b91ab23f76c3dbc4086b53d4fc8325030
@@ -68,6 +76,7 @@ fi
 if [ -z "$SPRW_OVPN_TIMEZONE" ] || [[ "$SPRW_OVPN_TIMEZONE" == *'!!'* ]]; then
 	SPRW_OVPN_TIMEZONE=Europe/Berlin
 fi
+# Hostname default: vpn.<customer DOMAIN>. Resolved later by install.sh if still empty.
 
 # ------------------------------------------------------------------------------------------------
 # Bridge for app.sh: placeholders are resolved by their bare name.
@@ -75,6 +84,7 @@ OVPN_IMAGE=$SPRW_OVPN_IMAGE
 OVPN_TRANSPORT=$SPRW_OVPN_TRANSPORT
 OVPN_PORT=$SPRW_OVPN_PORT
 OVPN_BACKEND_PORT=$SPRW_OVPN_BACKEND_PORT
+OVPN_HOSTNAME=$SPRW_OVPN_HOSTNAME
 OVPN_MEM_LIMIT=$SPRW_OVPN_MEM_LIMIT
 OVPN_ENDPOINT=$SPRW_OVPN_ENDPOINT
 OVPN_SUBNET_INDEX=$SPRW_OVPN_SUBNET_INDEX
@@ -82,3 +92,4 @@ OVPN_IPV4_CIDR=$SPRW_OVPN_IPV4_CIDR
 OVPN_DNS=$SPRW_OVPN_DNS
 OVPN_CLIENT_NAME=$SPRW_OVPN_CLIENT_NAME
 TIMEZONE=$SPRW_OVPN_TIMEZONE
+LETSENCRYPT_METHOD=$SPRW__LETSENCRYPT_METHOD
