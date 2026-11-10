@@ -1,0 +1,3 @@
+#!/bin/bash
+# Remove generated Homer files. Persistent data is deleted by app.sh purge.
+echo "Purging Homer generated files for !!CUSTOMER!! (homer_c_!!CUSTOMER!!)."

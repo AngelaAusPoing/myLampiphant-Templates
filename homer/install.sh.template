@@ -1,0 +1,59 @@
+#!/bin/bash
+# Prepare host directories and a starter Homer config.yml.
+# Existing config.yml is never overwritten.
+CUSTOMER="!!CUSTOMER!!"
+APPDOMAIN="!!APPDOMAIN!!"
+DATA_DIR="!!DATA_DIR!!"
+COMPOSE_DIR="!!COMPOSE_DIR!!"
+HOMER_TITLE="!!HOMER_TITLE!!"
+HOMER_SUBTITLE="Meine Apps"
+HOMER_IMAGE="b4bz/homer:v26.11.1"
+
+echo "Installing Homer for ${CUSTOMER} (${APPDOMAIN})..."
+
+mkdir -p "$COMPOSE_DIR"
+mkdir -p "$DATA_DIR/assets"
+
+if [ -z "$HOMER_TITLE" ] || [[ "$HOMER_TITLE" == *'!!'* ]]; then
+	HOMER_TITLE="${APPDOMAIN}"
+fi
+
+CONFIG="$DATA_DIR/assets/config.yml"
+if [ ! -f "$CONFIG" ]; then
+	cat > "$CONFIG" << YAMLEOF
+---
+title: "${HOMER_TITLE}"
+subtitle: "${HOMER_SUBTITLE}"
+logo: "logo.png"
+header: true
+footer: false
+columns: "auto"
+connectivityCheck: false
+
+services:
+  - name: "Apps"
+    icon: "fas fa-rocket"
+    items: []
+YAMLEOF
+	echo "Wrote starter config: ${CONFIG}"
+else
+	echo "Keeping existing Homer config: ${CONFIG}"
+fi
+
+# Copy bundled icons/logo if the image is already present. Do not overwrite
+# an existing config.yml (cp -n). Safe to skip if the image is not pulled yet.
+if command -v docker >/dev/null 2>&1 && docker image inspect "$HOMER_IMAGE" >/dev/null 2>&1; then
+	docker run --rm --user 0 --entrypoint sh \
+		-v "${DATA_DIR}/assets:/dest" \
+		"$HOMER_IMAGE" \
+		-c 'cp -an /www/default-assets/. /dest/ 2>/dev/null; cp -n /www/logo.png /dest/logo.png 2>/dev/null; true' \
+		|| true
+fi
+
+# linux/UID 1000, same as the container. Literals so app.sh does not expand them away.
+chown -R 1000:1000 "$DATA_DIR/assets" || true
+
+echo "Installation files prepared."
+echo "URL: https://${APPDOMAIN}"
+echo "Data: ${DATA_DIR}"
+echo "Edit ${CONFIG} to customise the dashboard; app.sh keeps app tiles in sync when HOMER_LINK is true."

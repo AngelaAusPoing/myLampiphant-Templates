@@ -1,0 +1,51 @@
+#!/bin/bash
+# Default variables for the app "homer"
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Homer is a single dashboard per customer (not per domain):
+#   app.sh homer add <customer>
+#   app.sh homer add lapha_de --var APPDOMAIN=homer.lapha.de
+#
+# The stack is named homer_c_<customer>, e.g. homer_c_lapha_de.
+# Other apps can opt into a dashboard link with SPRW__HOMER_LINK (default true).
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='homer'
+SPRW__APP_PREFIX='HOMER'
+
+# Global (customer-specific values are !!PLACEHOLDER!!, filled by app.sh)
+SPRW__APPDOMAIN='!!APPDOMAIN!!'
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'
+
+# Do not add Homer as a tile on its own dashboard.
+SPRW__HOMER_LINK='false'
+
+# App-specific defaults (override here or with --var)
+SPRW_HOMER_IMAGE='b4bz/homer:v26.11.1'
+SPRW_HOMER_MEM_LIMIT='32m'
+SPRW_HOMER_UID='1000'
+SPRW_HOMER_GID='1000'
+SPRW_HOMER_TIMEZONE='Europe/Berlin'
+SPRW_HOMER_TITLE='!!HOMER_TITLE!!'
+SPRW_HOMER_SUBTITLE='Meine Apps'
+
+# ------------------------------------------------------------------------------------------------
+# Bridge for app.sh: placeholders are resolved by their bare name.
+HOMER_IMAGE="$SPRW_HOMER_IMAGE"
+HOMER_MEM_LIMIT="$SPRW_HOMER_MEM_LIMIT"
+HOMER_UID="$SPRW_HOMER_UID"
+HOMER_GID="$SPRW_HOMER_GID"
+TIMEZONE="$SPRW_HOMER_TIMEZONE"
+HOMER_TITLE="$SPRW_HOMER_TITLE"
+HOMER_SUBTITLE="$SPRW_HOMER_SUBTITLE"
+APPDOMAIN="$SPRW__APPDOMAIN"
+VOLUME_MODE="$SPRW__VOLUME_MODE"
+HTTP_REDIRECT="$SPRW__HTTP_REDIRECT"
+LETSENCRYPT_METHOD="$SPRW__LETSENCRYPT_METHOD"
+EXTERNAL_ACCESS="$SPRW__EXTERNAL_ACCESS"

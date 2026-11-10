@@ -1,0 +1,14 @@
+# === myLampiphant variables ===
+# This file is sent to Komodo. No passwords, keys or tokens belong here.
+APPDOMAIN=!!APPDOMAIN!!
+CUSTOMER=!!CUSTOMER!!
+STACKNAME=!!STACKNAME!!
+
+# === homer (non-secret) ===
+HOMER_IMAGE=b4bz/homer:v26.11.1
+HOMER_MEM_LIMIT=32m
+HOMER_UID=1000
+HOMER_GID=1000
+TIMEZONE=Europe/Berlin
+HOMER_TITLE=!!HOMER_TITLE!!
+HOMER_SUBTITLE=Meine Apps
