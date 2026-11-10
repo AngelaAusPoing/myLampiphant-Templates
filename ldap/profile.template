@@ -1,0 +1,82 @@
+#!/bin/bash
+# Default variables for the app "ldap" (OpenLDAP + LDAP Account Manager + LDIF backup)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env and then kept
+# (persistent config). Change values there, not in the generated compose/.env files.
+#
+# First install (once per host, customer "_host_"):
+#   app.sh ldap add _host_ \
+#     --var LDAP_BASE_DN=dc=example,dc=com --var LDAP_ORGANISATION=Example
+#
+# Host-level app: the stack is named "ldap". LDAP listens only on the internal
+# ldap-shared network. LAM is bound to 127.0.0.1 and is reached via an SSH tunnel.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='ldap'
+SPRW__APP_PREFIX='LDAP'
+
+# Global Jinja2 / env
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'
+
+# App-specific variables (SPRW_LDAP_*)
+SPRW_LDAP_BASE_DN='!!LDAP_BASE_DN!!'                 # directory suffix, e.g. dc=example,dc=com
+SPRW_LDAP_ORGANISATION='!!LDAP_ORGANISATION!!'       # o= value of the root entry
+SPRW_LDAP_ROOT_DN='!!LDAP_ROOT_DN!!'                 # typically cn=admin,<BASE_DN>
+SPRW_LDAP_ROOT_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_LDAP_READONLY_DN='!!LDAP_READONLY_DN!!'         # typically cn=readonly,ou=system,<BASE_DN>
+SPRW_LDAP_READONLY_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_LDAP_LAM_PASSWORD="!!NEW_PASSWORD!!"              # LAM config master password (not an LDAP bind)
+SPRW_LDAP_LAM_IMAGE='!!LAM_IMAGE!!'                  # official LAM image
+SPRW_LDAP_LAM_PORT='!!LAM_PORT!!'                    # host port bound to 127.0.0.1
+SPRW_LDAP_LAM_LANG='!!LAM_LANG!!'                    # e.g. de_DE or en_US
+SPRW_LDAP_TIMEZONE='!!TIMEZONE!!'
+SPRW_LDAP_BACKUP_INTERVAL='!!BACKUP_INTERVAL!!'      # seconds between LDIF exports
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, change the values above instead (defaults for empty values).
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=false
+fi
+if [ -z "$SPRW_LDAP_BASE_DN" ] || [[ "$SPRW_LDAP_BASE_DN" == *'!!'* ]]; then
+	SPRW_LDAP_BASE_DN=dc=example,dc=com
+fi
+if [ -z "$SPRW_LDAP_ORGANISATION" ] || [[ "$SPRW_LDAP_ORGANISATION" == *'!!'* ]]; then
+	SPRW_LDAP_ORGANISATION=Example
+fi
+if [ -z "$SPRW_LDAP_ROOT_DN" ] || [[ "$SPRW_LDAP_ROOT_DN" == *'!!'* ]]; then
+	SPRW_LDAP_ROOT_DN=cn=admin,${SPRW_LDAP_BASE_DN}
+fi
+if [ -z "$SPRW_LDAP_READONLY_DN" ] || [[ "$SPRW_LDAP_READONLY_DN" == *'!!'* ]]; then
+	SPRW_LDAP_READONLY_DN=cn=readonly,ou=system,${SPRW_LDAP_BASE_DN}
+fi
+if [ -z "$SPRW_LDAP_LAM_IMAGE" ] || [[ "$SPRW_LDAP_LAM_IMAGE" == *'!!'* ]]; then
+	SPRW_LDAP_LAM_IMAGE=ghcr.io/ldapaccountmanager/lam:stable
+fi
+if [ -z "$SPRW_LDAP_LAM_PORT" ] || [[ "$SPRW_LDAP_LAM_PORT" == *'!!'* ]]; then
+	SPRW_LDAP_LAM_PORT=18080
+fi
+if [ -z "$SPRW_LDAP_LAM_LANG" ] || [[ "$SPRW_LDAP_LAM_LANG" == *'!!'* ]]; then
+	SPRW_LDAP_LAM_LANG=de_DE
+fi
+if [ -z "$SPRW_LDAP_TIMEZONE" ] || [[ "$SPRW_LDAP_TIMEZONE" == *'!!'* ]]; then
+	SPRW_LDAP_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_LDAP_BACKUP_INTERVAL" ] || [[ "$SPRW_LDAP_BACKUP_INTERVAL" == *'!!'* ]]; then
+	SPRW_LDAP_BACKUP_INTERVAL=86400
+fi
+
+# ------------------------------------------------------------------------------------------------
+# Bridge for app.sh: placeholders are resolved by their bare name.
+LDAP_BASE_DN=$SPRW_LDAP_BASE_DN
+LDAP_ORGANISATION=$SPRW_LDAP_ORGANISATION
+LDAP_ROOT_DN=$SPRW_LDAP_ROOT_DN
+LDAP_READONLY_DN=$SPRW_LDAP_READONLY_DN
+LAM_IMAGE=$SPRW_LDAP_LAM_IMAGE
+LAM_PORT=$SPRW_LDAP_LAM_PORT
+LAM_LANG=$SPRW_LDAP_LAM_LANG
+TIMEZONE=$SPRW_LDAP_TIMEZONE
+BACKUP_INTERVAL=$SPRW_LDAP_BACKUP_INTERVAL

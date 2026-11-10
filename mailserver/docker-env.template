@@ -1,0 +1,11 @@
+# === myLampiphant variables ===
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__APPDOMAIN=!!APPDOMAIN!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# === mailserver ===
+# No secrets in here: this file is sent to Komodo. Secrets (postmaster password, Roundcube key,
+# DKIM keys, imapfilter credentials) stay on the host in the persistent config / data directory.
+SPRW_MAIL_MAILHOST=!!MAILHOST!!
+SPRW_MAIL_MAILDOMAIN=!!MAILDOMAIN!!
+SPRW_MAIL_POSTMASTER=!!POSTMASTER!!

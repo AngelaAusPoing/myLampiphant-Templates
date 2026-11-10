@@ -1,0 +1,162 @@
+#!/bin/bash
+# Default variables for the app "mailserver" (docker-mailserver + Rspamd + Roundcube + optional imapfilter)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env and then kept
+# (persistent config). Change values there, not in the generated compose/.env files.
+#
+# First install (once per host, customer "_host_"). Values not passed with --var get the defaults below;
+# if a required value is still missing, install.sh stops - review this file and run the command again.
+#   app.sh mailserver add _host_ \
+#     --var APPDOMAIN=mail.example.com --var MAILHOST=mail.example.com \
+#     --var MAILDOMAIN=example.com --var POSTMASTER=postmaster@example.com
+#
+# The mail ports (25/587/993) can only be bound once per host, so this is a single-instance app.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='mailserver'                          # app name
+SPRW__APP_PREFIX='MAIL'                              # app prefix -> SPRW_MAIL_*
+
+# Global environment variables used in the templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                      # Webmail host (Roundcube via Traefik), normally = MAILHOST
+
+# Global Jinja2 variables used in the templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                  # only "bind" is supported by this template
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'    # acme (Traefik certresolver letsencrypt) or dns01 (letsencrypt-dns)
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'          # true = webmail public, false = webmail only LAN/VPN
+
+# App-specific variables (SPRW_MAIL_*)
+SPRW_MAIL_MAILHOST='!!MAILHOST!!'                    # FQDN of the mail server: MX target, HELO, PTR/rDNS, TLS certificate (e.g. mail.example.com)
+SPRW_MAIL_MAILDOMAIN='!!MAILDOMAIN!!'                # first mail domain (e.g. example.com)
+SPRW_MAIL_POSTMASTER='!!POSTMASTER!!'                # postmaster mailbox, created by mailadmin.sh init (e.g. postmaster@example.com)
+SPRW_MAIL_POSTMASTER_PASSWORD=!!NEW_PASSWORD!!
+SPRW_MAIL_DKIM_SELECTOR='!!DKIM_SELECTOR!!'          # DKIM selector (DNS: <selector>._domainkey.<domain>)
+SPRW_MAIL_BIND_IP='!!BIND_IP!!'                      # host IPv4 for ports 25/587/993 (0.0.0.0 = all IPv4; IPv6 is not published, see docs)
+SPRW_MAIL_MAILNET_SUBNET='!!MAILNET_SUBNET!!'        # private bridge network of the stack
+SPRW_MAIL_RESOLVER_IP='!!RESOLVER_IP!!'              # fixed IP of the local Unbound resolver inside MAILNET_SUBNET
+SPRW_MAIL_TRAEFIK_ACME_DIR='!!TRAEFIK_ACME_DIR!!'    # host directory containing Traefik's acme.json (mounted read-only into the cert dumper)
+SPRW_MAIL_TIMEZONE='!!TIMEZONE!!'                    # e.g. Europe/Berlin
+SPRW_MAIL_DMS_VERSION='!!DMS_VERSION!!'              # docker-mailserver image tag
+SPRW_MAIL_ROUNDCUBE_VERSION='!!ROUNDCUBE_VERSION!!'  # roundcube/roundcubemail image tag
+SPRW_MAIL_MESSAGE_SIZE_LIMIT='!!MESSAGE_SIZE_LIMIT!!' # max. message size in bytes
+
+# App-specific Jinja2 toggles (true/false)
+SPRW_MAIL_ENABLE_WEBMAIL='!!ENABLE_WEBMAIL!!'        # Roundcube in this stack (false = run webmail elsewhere, e.g. per customer)
+SPRW_MAIL_ENABLE_IMAPFILTER='!!ENABLE_IMAPFILTER!!'  # imapfilter service (config in <data_dir>/imapfilter/config.lua)
+SPRW_MAIL_ENABLE_POP3='!!ENABLE_POP3!!'              # POP3S on port 995
+SPRW_MAIL_ENABLE_CLAMAV='!!ENABLE_CLAMAV!!'          # ClamAV virus scanner (needs ~1.5 GB RAM)
+SPRW_MAIL_ENABLE_FAIL2BAN='!!ENABLE_FAIL2BAN!!'      # fail2ban inside the mail container
+SPRW_MAIL_ENABLE_GREYLISTING='!!ENABLE_GREYLISTING!!' # Rspamd greylisting
+SPRW_MAIL_ENABLE_NEURAL='!!ENABLE_NEURAL!!'          # Rspamd neural network module (experimental)
+
+# Account source: FILE (local docker-mailserver accounts) or LDAP (OpenLDAP on ldap-shared)
+SPRW_MAIL_ACCOUNT_PROVISIONER='!!ACCOUNT_PROVISIONER!!'  # FILE or LDAP
+# Used only when ACCOUNT_PROVISIONER=LDAP (bind password is a host file, not a variable)
+SPRW_MAIL_LDAP_SERVER_HOST='!!LDAP_SERVER_HOST!!'        # e.g. ldap://ldap:389
+SPRW_MAIL_LDAP_SEARCH_BASE='!!LDAP_SEARCH_BASE!!'        # e.g. dc=example,dc=com
+SPRW_MAIL_LDAP_BIND_DN='!!LDAP_BIND_DN!!'                # read-only bind DN
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, change the values above instead (defaults for empty values).
+if [ -z "$SPRW_MAIL_MAILDOMAIN" ] || [[ "$SPRW_MAIL_MAILDOMAIN" == *'!!'* ]]; then
+	SPRW_MAIL_MAILDOMAIN=${SPRW__DOMAIN:-example.com}
+fi
+if [ -z "$SPRW_MAIL_MAILHOST" ] || [[ "$SPRW_MAIL_MAILHOST" == *'!!'* ]]; then
+	SPRW_MAIL_MAILHOST=mail.${SPRW_MAIL_MAILDOMAIN}
+fi
+if [ -z "$SPRW__APPDOMAIN" ] || [[ "$SPRW__APPDOMAIN" == *'!!'* ]]; then
+	SPRW__APPDOMAIN=${SPRW_MAIL_MAILHOST}
+fi
+if [ -z "$SPRW_MAIL_POSTMASTER" ] || [[ "$SPRW_MAIL_POSTMASTER" == *'!!'* ]]; then
+	SPRW_MAIL_POSTMASTER=postmaster@${SPRW_MAIL_MAILDOMAIN}
+fi
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW_MAIL_DKIM_SELECTOR" ] || [[ "$SPRW_MAIL_DKIM_SELECTOR" == *'!!'* ]]; then
+	SPRW_MAIL_DKIM_SELECTOR=mail
+fi
+if [ -z "$SPRW_MAIL_BIND_IP" ] || [[ "$SPRW_MAIL_BIND_IP" == *'!!'* ]]; then
+	SPRW_MAIL_BIND_IP=0.0.0.0
+fi
+if [ -z "$SPRW_MAIL_MAILNET_SUBNET" ] || [[ "$SPRW_MAIL_MAILNET_SUBNET" == *'!!'* ]]; then
+	SPRW_MAIL_MAILNET_SUBNET=172.30.53.0/24
+fi
+if [ -z "$SPRW_MAIL_RESOLVER_IP" ] || [[ "$SPRW_MAIL_RESOLVER_IP" == *'!!'* ]]; then
+	SPRW_MAIL_RESOLVER_IP=172.30.53.53
+fi
+if [ -z "$SPRW_MAIL_TRAEFIK_ACME_DIR" ] || [[ "$SPRW_MAIL_TRAEFIK_ACME_DIR" == *'!!'* ]]; then
+	SPRW_MAIL_TRAEFIK_ACME_DIR=/opt/docker-data/_host_/traefik
+fi
+if [ -z "$SPRW_MAIL_TIMEZONE" ] || [[ "$SPRW_MAIL_TIMEZONE" == *'!!'* ]]; then
+	SPRW_MAIL_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_MAIL_DMS_VERSION" ] || [[ "$SPRW_MAIL_DMS_VERSION" == *'!!'* ]]; then
+	SPRW_MAIL_DMS_VERSION=16.0.1
+fi
+if [ -z "$SPRW_MAIL_ROUNDCUBE_VERSION" ] || [[ "$SPRW_MAIL_ROUNDCUBE_VERSION" == *'!!'* ]]; then
+	SPRW_MAIL_ROUNDCUBE_VERSION=1.7.x-apache
+fi
+if [ -z "$SPRW_MAIL_MESSAGE_SIZE_LIMIT" ] || [[ "$SPRW_MAIL_MESSAGE_SIZE_LIMIT" == *'!!'* ]]; then
+	SPRW_MAIL_MESSAGE_SIZE_LIMIT=52428800
+fi
+if [ -z "$SPRW_MAIL_ENABLE_WEBMAIL" ] || [[ "$SPRW_MAIL_ENABLE_WEBMAIL" == *'!!'* ]]; then
+	SPRW_MAIL_ENABLE_WEBMAIL=true
+fi
+if [ -z "$SPRW_MAIL_ENABLE_IMAPFILTER" ] || [[ "$SPRW_MAIL_ENABLE_IMAPFILTER" == *'!!'* ]]; then
+	SPRW_MAIL_ENABLE_IMAPFILTER=false
+fi
+if [ -z "$SPRW_MAIL_ENABLE_POP3" ] || [[ "$SPRW_MAIL_ENABLE_POP3" == *'!!'* ]]; then
+	SPRW_MAIL_ENABLE_POP3=false
+fi
+if [ -z "$SPRW_MAIL_ENABLE_CLAMAV" ] || [[ "$SPRW_MAIL_ENABLE_CLAMAV" == *'!!'* ]]; then
+	SPRW_MAIL_ENABLE_CLAMAV=false
+fi
+if [ -z "$SPRW_MAIL_ENABLE_FAIL2BAN" ] || [[ "$SPRW_MAIL_ENABLE_FAIL2BAN" == *'!!'* ]]; then
+	SPRW_MAIL_ENABLE_FAIL2BAN=true
+fi
+if [ -z "$SPRW_MAIL_ENABLE_GREYLISTING" ] || [[ "$SPRW_MAIL_ENABLE_GREYLISTING" == *'!!'* ]]; then
+	SPRW_MAIL_ENABLE_GREYLISTING=true
+fi
+if [ -z "$SPRW_MAIL_ENABLE_NEURAL" ] || [[ "$SPRW_MAIL_ENABLE_NEURAL" == *'!!'* ]]; then
+	SPRW_MAIL_ENABLE_NEURAL=false
+fi
+if [ -z "$SPRW_MAIL_ACCOUNT_PROVISIONER" ] || [[ "$SPRW_MAIL_ACCOUNT_PROVISIONER" == *'!!'* ]]; then
+	SPRW_MAIL_ACCOUNT_PROVISIONER=FILE
+fi
+if [ -z "$SPRW_MAIL_LDAP_SERVER_HOST" ] || [[ "$SPRW_MAIL_LDAP_SERVER_HOST" == *'!!'* ]]; then
+	SPRW_MAIL_LDAP_SERVER_HOST=ldap://ldap:389
+fi
+# LDAP_SEARCH_BASE and LDAP_BIND_DN stay empty unless ACCOUNT_PROVISIONER=LDAP (then install/add requires them)
+
+# ------------------------------------------------------------------------------------------------
+# Bridge for app.sh: app.sh resolves app-specific placeholders by their bare name (placeholder MAILHOST -> variable MAILHOST).
+# These lines mirror the SPRW_MAIL_* values above. Do not edit them - edit the SPRW_MAIL_* values.
+MAILHOST=$SPRW_MAIL_MAILHOST
+MAILDOMAIN=$SPRW_MAIL_MAILDOMAIN
+POSTMASTER=$SPRW_MAIL_POSTMASTER
+DKIM_SELECTOR=$SPRW_MAIL_DKIM_SELECTOR
+BIND_IP=$SPRW_MAIL_BIND_IP
+MAILNET_SUBNET=$SPRW_MAIL_MAILNET_SUBNET
+RESOLVER_IP=$SPRW_MAIL_RESOLVER_IP
+TRAEFIK_ACME_DIR=$SPRW_MAIL_TRAEFIK_ACME_DIR
+TIMEZONE=$SPRW_MAIL_TIMEZONE
+DMS_VERSION=$SPRW_MAIL_DMS_VERSION
+ROUNDCUBE_VERSION=$SPRW_MAIL_ROUNDCUBE_VERSION
+MESSAGE_SIZE_LIMIT=$SPRW_MAIL_MESSAGE_SIZE_LIMIT
+ENABLE_WEBMAIL=$SPRW_MAIL_ENABLE_WEBMAIL
+ENABLE_IMAPFILTER=$SPRW_MAIL_ENABLE_IMAPFILTER
+ENABLE_POP3=$SPRW_MAIL_ENABLE_POP3
+ENABLE_CLAMAV=$SPRW_MAIL_ENABLE_CLAMAV
+ENABLE_FAIL2BAN=$SPRW_MAIL_ENABLE_FAIL2BAN
+ENABLE_GREYLISTING=$SPRW_MAIL_ENABLE_GREYLISTING
+ENABLE_NEURAL=$SPRW_MAIL_ENABLE_NEURAL
+ACCOUNT_PROVISIONER=$SPRW_MAIL_ACCOUNT_PROVISIONER
+LDAP_SERVER_HOST=$SPRW_MAIL_LDAP_SERVER_HOST
+LDAP_SEARCH_BASE=$SPRW_MAIL_LDAP_SEARCH_BASE
+LDAP_BIND_DN=$SPRW_MAIL_LDAP_BIND_DN

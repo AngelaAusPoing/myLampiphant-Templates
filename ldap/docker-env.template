@@ -1,0 +1,10 @@
+# === myLampiphant variables ===
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# === ldap (no secrets: this file is sent to Komodo) ===
+# Secrets (root/readonly/LAM passwords) stay on the host in the persistent config
+# and in <data_dir>/secrets/, mounted into the containers as env_file / password files.
+SPRW_LDAP_BASE_DN=!!LDAP_BASE_DN!!
+SPRW_LDAP_ORGANISATION=!!LDAP_ORGANISATION!!
+SPRW_LDAP_LAM_PORT=!!LAM_PORT!!
