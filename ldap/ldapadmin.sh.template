@@ -337,7 +337,7 @@ cn: admin
 description: LDAP administrator for customer ${customer}
 userPassword: temporary
 LDIF
-            docker exec -i -e P="$admin_pw" "$CONTAINER" sh -c 'umask 077; printf "%s" "$P" > /tmp/.newpw'
+            printf '%s' "$admin_pw" | docker exec -i "$CONTAINER" sh -c 'umask 077; cat > /tmp/.newpw'
             ldap_passwd -T /tmp/.newpw "$admin_dn" >/dev/null
             docker exec "$CONTAINER" rm -f /tmp/.newpw
             store_customer_secret "$customer" "$admin_dn" "$admin_pw"
@@ -387,9 +387,8 @@ LDIF
             echo "ERROR: empty password" >&2
             exit 1
         fi
-        docker exec -i "$CONTAINER" sh -c 'umask 077; cat > /tmp/.newpw'
-        # The password was consumed from stdin already into $newpw; write it via env into the file carefully
-        docker exec -i -e P="$newpw" "$CONTAINER" sh -c 'umask 077; printf "%s" "$P" > /tmp/.newpw'
+        # Pass the password via stdin (not argv/env, so it never shows up in ps or docker inspect)
+        printf '%s' "$newpw" | docker exec -i "$CONTAINER" sh -c 'umask 077; cat > /tmp/.newpw'
         unset newpw
         ldap_passwd -T /tmp/.newpw "$dn" >/dev/null
         docker exec "$CONTAINER" rm -f /tmp/.newpw
