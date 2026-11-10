@@ -50,15 +50,18 @@ services:
       - "traefik.http.routers.!!STACKNAME!!-http.middlewares=!!STACKNAME!!-https"
       - "traefik.http.middlewares.!!STACKNAME!!-https.redirectscheme.scheme=https"
       {%- endif %}
-      {%- if EXTERNAL_ACCESS == "true" %}
-      - "traefik.http.services.!!STACKNAME!!.loadbalancer.server.port=80"
-      - "traefik.docker.network=proxy-shared"
+      {%- if AUTH_PROTECT == "true" and EXTERNAL_ACCESS == "false" %}
+      - "traefik.http.routers.!!STACKNAME!!.middlewares=authelia@docker,iprestrict@file"
+      {%- elif AUTH_PROTECT == "true" %}
+      - "traefik.http.routers.!!STACKNAME!!.middlewares=authelia@docker"
       {%- elif EXTERNAL_ACCESS == "false" %}
       - "traefik.http.routers.!!STACKNAME!!.middlewares=iprestrict@file"
+      {%- endif %}
+      {%- if EXTERNAL_ACCESS == "false" %}
       - "traefik.http.middlewares.iprestrict.ipallowlist.sourcerange=10.8.0.0/24,192.168.0.0/16,172.16.0.0/12,127.0.0.1/32"
+      {%- endif %}
       - "traefik.http.services.!!STACKNAME!!.loadbalancer.server.port=80"
       - "traefik.docker.network=proxy-shared"
-      {%- endif %}
 
 {%- if VOLUME_MODE == "named_bind" %}
 volumes:

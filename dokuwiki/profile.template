@@ -22,6 +22,10 @@ SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'
 SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'
 SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'
 
+# Optional Traefik ForwardAuth via the host Authelia stack (middleware authelia@docker).
+# Default false. Requires the host app "authelia" to be running.
+SPRW_DOKUWIKI_AUTH_PROTECT='!!AUTH_PROTECT!!'
+
 # App-specific defaults (not customer-specific; override here or with --var)
 SPRW_DOKUWIKI_IMAGE='lscr.io/linuxserver/dokuwiki:latest'
 SPRW_DOKUWIKI_MEM_LIMIT='256m'
@@ -41,3 +45,7 @@ VOLUME_MODE="$SPRW__VOLUME_MODE"
 HTTP_REDIRECT="$SPRW__HTTP_REDIRECT"
 LETSENCRYPT_METHOD="$SPRW__LETSENCRYPT_METHOD"
 EXTERNAL_ACCESS="$SPRW__EXTERNAL_ACCESS"
+if [ -z "$SPRW_DOKUWIKI_AUTH_PROTECT" ] || [[ "$SPRW_DOKUWIKI_AUTH_PROTECT" == *'!!'* ]]; then
+	SPRW_DOKUWIKI_AUTH_PROTECT=false
+fi
+AUTH_PROTECT="$SPRW_DOKUWIKI_AUTH_PROTECT"

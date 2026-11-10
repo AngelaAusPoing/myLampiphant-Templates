@@ -1,0 +1,13 @@
+# === myLampiphant variables ===
+# This file is sent to Komodo. No passwords, keys or tokens belong here.
+APPDOMAIN=!!APPDOMAIN!!
+CUSTOMER=!!CUSTOMER!!
+STACKNAME=!!STACKNAME!!
+
+# === authelia (non-secret) ===
+AUTHELIA_IMAGE=authelia/authelia:4.39.28
+AUTHELIA_MEM_LIMIT=128m
+AUTHELIA_REDIS_IMAGE=redis:7.4-alpine
+AUTHELIA_REDIS_MEM_LIMIT=64m
+TIMEZONE=Europe/Berlin
+AUTHELIA_ROUTER_RULE=!!ROUTER_RULE!!

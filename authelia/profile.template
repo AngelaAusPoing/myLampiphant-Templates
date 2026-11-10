@@ -1,0 +1,219 @@
+#!/bin/bash
+# Default variables for the app "authelia"
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Host-level app (once per server, customer "_host_", stack name "authelia"):
+#   app.sh authelia add _host_ --var APPDOMAIN=auth.lampiphant.de
+#   app.sh authelia add _host_ --var APPDOMAIN=auth.lampiphant.de \
+#     --var COOKIE_DOMAINS=lampiphant.de,lapha.de,angelaauspoing.de
+#
+# Requires the host "ldap" stack (read-only bind). app.sh will not auto-install
+# ldap first, because both apps live under _host_. Install ldap before authelia.
+#
+# Secrets (JWT, session, storage encryption) are generated once by app.sh
+# (!!NEW_KEY!!) and written to DATA_DIR/secrets/ by install.sh. They are never
+# sent to Komodo and must never be printed.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='authelia'
+SPRW__APP_PREFIX='AUTHELIA'
+
+# Global (customer/domain-specific values are !!PLACEHOLDER!!, filled by app.sh)
+SPRW__APPDOMAIN='!!APPDOMAIN!!'
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'
+
+# Images and limits
+SPRW_AUTHELIA_IMAGE='!!AUTHELIA_IMAGE!!'
+SPRW_AUTHELIA_MEM_LIMIT='!!AUTHELIA_MEM_LIMIT!!'
+SPRW_AUTHELIA_REDIS_IMAGE='!!REDIS_IMAGE!!'
+SPRW_AUTHELIA_REDIS_MEM_LIMIT='!!REDIS_MEM_LIMIT!!'
+SPRW_AUTHELIA_TIMEZONE='!!TIMEZONE!!'
+
+# Options (Docusaurus buttons)
+# STORAGE_MODE: sqlite = sqlite + in-memory sessions (lowest RAM, default)
+#               redis  = sqlite + Redis sessions (~64m extra; still sqlite for
+#                        Authelia's SQL storage, Redis cannot replace that)
+SPRW_AUTHELIA_STORAGE_MODE='!!STORAGE_MODE!!'
+# NOTIFIER: filesystem (default, writes /config/notification.txt) or smtp
+SPRW_AUTHELIA_NOTIFIER='!!NOTIFIER!!'
+
+# Portal and session cookies
+# APPDOMAIN is the primary auth hostname (e.g. auth.lampiphant.de).
+# COOKIE_DOMAINS: comma-separated registered domains (lampiphant.de,lapha.de).
+# For each cookie domain D, the portal must also be reachable at auth.D
+# (Authelia requires authelia_url to be on that domain or a subdomain).
+# AUTH_HOSTS / ROUTER_RULE are derived if left as placeholders.
+SPRW_AUTHELIA_COOKIE_DOMAINS='!!COOKIE_DOMAINS!!'
+SPRW_AUTHELIA_AUTH_HOSTS='!!AUTH_HOSTS!!'
+SPRW_AUTHELIA_ROUTER_RULE='!!ROUTER_RULE!!'
+SPRW_AUTHELIA_DEFAULT_REDIRECTION_URL='!!DEFAULT_REDIRECTION_URL!!'
+SPRW_AUTHELIA_DEFAULT_POLICY='!!DEFAULT_POLICY!!'   # one_factor (default) or two_factor
+SPRW_AUTHELIA_TOTP_ISSUER='!!TOTP_ISSUER!!'
+
+# LDAP (read-only bind, same account as the mailserver)
+SPRW_AUTHELIA_LDAP_SERVER_HOST='!!LDAP_SERVER_HOST!!'
+SPRW_AUTHELIA_LDAP_BASE_DN='!!LDAP_BASE_DN!!'
+SPRW_AUTHELIA_LDAP_BIND_DN='!!LDAP_BIND_DN!!'
+SPRW_AUTHELIA_LDAP_USERNAME_ATTRIBUTE='!!LDAP_USERNAME_ATTRIBUTE!!'  # uid (default) or mail
+
+# SMTP notifier (used only when NOTIFIER=smtp). Do not invent a mailbox password;
+# set SMTP_USER / SMTP_PASSWORD to an existing mailbox, then set NOTIFIER=smtp.
+SPRW_AUTHELIA_SMTP_HOST='!!SMTP_HOST!!'
+SPRW_AUTHELIA_SMTP_PORT='!!SMTP_PORT!!'
+SPRW_AUTHELIA_SMTP_USER='!!SMTP_USER!!'
+SPRW_AUTHELIA_SMTP_PASSWORD='!!SMTP_PASSWORD!!'
+SPRW_AUTHELIA_SMTP_SENDER='!!SMTP_SENDER!!'
+SPRW_AUTHELIA_SMTP_IDENTIFIER='!!SMTP_IDENTIFIER!!'
+
+# Secrets — generated once by app.sh, stored in this config and in DATA_DIR/secrets only
+SPRW_AUTHELIA_JWT_SECRET="!!NEW_KEY!!"
+SPRW_AUTHELIA_SESSION_SECRET="!!NEW_KEY!!"
+SPRW_AUTHELIA_STORAGE_ENCRYPTION_KEY="!!NEW_KEY!!"
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, change the values above instead (defaults for empty values).
+if [ -z "$SPRW__APPDOMAIN" ] || [[ "$SPRW__APPDOMAIN" == *'!!'* ]]; then
+	SPRW__APPDOMAIN=auth.lampiphant.de
+fi
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW_AUTHELIA_IMAGE" ] || [[ "$SPRW_AUTHELIA_IMAGE" == *'!!'* ]]; then
+	SPRW_AUTHELIA_IMAGE=authelia/authelia:4.39.28
+fi
+if [ -z "$SPRW_AUTHELIA_MEM_LIMIT" ] || [[ "$SPRW_AUTHELIA_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_AUTHELIA_MEM_LIMIT=128m
+fi
+if [ -z "$SPRW_AUTHELIA_REDIS_IMAGE" ] || [[ "$SPRW_AUTHELIA_REDIS_IMAGE" == *'!!'* ]]; then
+	SPRW_AUTHELIA_REDIS_IMAGE=redis:7.4-alpine
+fi
+if [ -z "$SPRW_AUTHELIA_REDIS_MEM_LIMIT" ] || [[ "$SPRW_AUTHELIA_REDIS_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_AUTHELIA_REDIS_MEM_LIMIT=64m
+fi
+if [ -z "$SPRW_AUTHELIA_TIMEZONE" ] || [[ "$SPRW_AUTHELIA_TIMEZONE" == *'!!'* ]]; then
+	SPRW_AUTHELIA_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_AUTHELIA_STORAGE_MODE" ] || [[ "$SPRW_AUTHELIA_STORAGE_MODE" == *'!!'* ]]; then
+	SPRW_AUTHELIA_STORAGE_MODE=sqlite
+fi
+if [ -z "$SPRW_AUTHELIA_NOTIFIER" ] || [[ "$SPRW_AUTHELIA_NOTIFIER" == *'!!'* ]]; then
+	SPRW_AUTHELIA_NOTIFIER=filesystem
+fi
+if [ -z "$SPRW_AUTHELIA_COOKIE_DOMAINS" ] || [[ "$SPRW_AUTHELIA_COOKIE_DOMAINS" == *'!!'* ]]; then
+	# auth.example.com -> example.com; a registered domain (example.com) stays as-is
+	_rest="${SPRW__APPDOMAIN#*.}"
+	if [[ "$_rest" == *.* ]]; then
+		SPRW_AUTHELIA_COOKIE_DOMAINS="$_rest"
+	else
+		SPRW_AUTHELIA_COOKIE_DOMAINS="${SPRW__APPDOMAIN}"
+	fi
+	unset _rest
+fi
+if [ -z "$SPRW_AUTHELIA_DEFAULT_POLICY" ] || [[ "$SPRW_AUTHELIA_DEFAULT_POLICY" == *'!!'* ]]; then
+	SPRW_AUTHELIA_DEFAULT_POLICY=one_factor
+fi
+if [ -z "$SPRW_AUTHELIA_TOTP_ISSUER" ] || [[ "$SPRW_AUTHELIA_TOTP_ISSUER" == *'!!'* ]]; then
+	SPRW_AUTHELIA_TOTP_ISSUER=Lampiphant
+fi
+if [ -z "$SPRW_AUTHELIA_LDAP_SERVER_HOST" ] || [[ "$SPRW_AUTHELIA_LDAP_SERVER_HOST" == *'!!'* ]]; then
+	SPRW_AUTHELIA_LDAP_SERVER_HOST=ldap://ldap:389
+fi
+if [ -z "$SPRW_AUTHELIA_LDAP_BASE_DN" ] || [[ "$SPRW_AUTHELIA_LDAP_BASE_DN" == *'!!'* ]]; then
+	SPRW_AUTHELIA_LDAP_BASE_DN=dc=lampiphant,dc=de
+fi
+if [ -z "$SPRW_AUTHELIA_LDAP_BIND_DN" ] || [[ "$SPRW_AUTHELIA_LDAP_BIND_DN" == *'!!'* ]]; then
+	SPRW_AUTHELIA_LDAP_BIND_DN=cn=readonly,ou=system,${SPRW_AUTHELIA_LDAP_BASE_DN}
+fi
+if [ -z "$SPRW_AUTHELIA_LDAP_USERNAME_ATTRIBUTE" ] || [[ "$SPRW_AUTHELIA_LDAP_USERNAME_ATTRIBUTE" == *'!!'* ]]; then
+	SPRW_AUTHELIA_LDAP_USERNAME_ATTRIBUTE=uid
+fi
+if [ -z "$SPRW_AUTHELIA_SMTP_HOST" ] || [[ "$SPRW_AUTHELIA_SMTP_HOST" == *'!!'* ]]; then
+	SPRW_AUTHELIA_SMTP_HOST=mail.lapha.de
+fi
+if [ -z "$SPRW_AUTHELIA_SMTP_PORT" ] || [[ "$SPRW_AUTHELIA_SMTP_PORT" == *'!!'* ]]; then
+	SPRW_AUTHELIA_SMTP_PORT=587
+fi
+if [ -z "$SPRW_AUTHELIA_SMTP_SENDER" ] || [[ "$SPRW_AUTHELIA_SMTP_SENDER" == *'!!'* ]]; then
+	SPRW_AUTHELIA_SMTP_SENDER="Authelia <noreply@${SPRW__APPDOMAIN#auth.}>"
+fi
+if [ -z "$SPRW_AUTHELIA_SMTP_IDENTIFIER" ] || [[ "$SPRW_AUTHELIA_SMTP_IDENTIFIER" == *'!!'* ]]; then
+	SPRW_AUTHELIA_SMTP_IDENTIFIER="${SPRW_AUTHELIA_SMTP_HOST}"
+fi
+# DEFAULT_REDIRECTION_URL may stay empty (no automatic redirect after login).
+
+# Derive AUTH_HOSTS and the Traefik Host() rule when not set explicitly.
+if [ -z "$SPRW_AUTHELIA_AUTH_HOSTS" ] || [[ "$SPRW_AUTHELIA_AUTH_HOSTS" == *'!!'* ]]; then
+	SPRW_AUTHELIA_AUTH_HOSTS="${SPRW__APPDOMAIN}"
+	IFS=',' read -ra _cookie_ds <<< "$SPRW_AUTHELIA_COOKIE_DOMAINS"
+	for _d in "${_cookie_ds[@]}"; do
+		_d="${_d#"${_d%%[![:space:]]*}"}"
+		_d="${_d%"${_d##*[![:space:]]}"}"
+		[ -z "$_d" ] && continue
+		_h="auth.${_d}"
+		case ",${SPRW_AUTHELIA_AUTH_HOSTS}," in
+			*",${_h},"*) ;;
+			*) SPRW_AUTHELIA_AUTH_HOSTS="${SPRW_AUTHELIA_AUTH_HOSTS},${_h}" ;;
+		esac
+	done
+	unset _cookie_ds _d _h
+fi
+if [ -z "$SPRW_AUTHELIA_ROUTER_RULE" ] || [[ "$SPRW_AUTHELIA_ROUTER_RULE" == *'!!'* ]]; then
+	SPRW_AUTHELIA_ROUTER_RULE=""
+	IFS=',' read -ra _auth_hs <<< "$SPRW_AUTHELIA_AUTH_HOSTS"
+	for _h in "${_auth_hs[@]}"; do
+		_h="${_h#"${_h%%[![:space:]]*}"}"
+		_h="${_h%"${_h##*[![:space:]]}"}"
+		[ -z "$_h" ] && continue
+		if [ -z "$SPRW_AUTHELIA_ROUTER_RULE" ]; then
+			SPRW_AUTHELIA_ROUTER_RULE="Host(\`${_h}\`)"
+		else
+			SPRW_AUTHELIA_ROUTER_RULE="${SPRW_AUTHELIA_ROUTER_RULE} || Host(\`${_h}\`)"
+		fi
+	done
+	unset _auth_hs _h
+fi
+
+# ------------------------------------------------------------------------------------------------
+# Bridge for app.sh: placeholders are resolved by their bare name.
+AUTHELIA_IMAGE="$SPRW_AUTHELIA_IMAGE"
+AUTHELIA_MEM_LIMIT="$SPRW_AUTHELIA_MEM_LIMIT"
+REDIS_IMAGE="$SPRW_AUTHELIA_REDIS_IMAGE"
+REDIS_MEM_LIMIT="$SPRW_AUTHELIA_REDIS_MEM_LIMIT"
+TIMEZONE="$SPRW_AUTHELIA_TIMEZONE"
+STORAGE_MODE="$SPRW_AUTHELIA_STORAGE_MODE"
+NOTIFIER="$SPRW_AUTHELIA_NOTIFIER"
+COOKIE_DOMAINS="$SPRW_AUTHELIA_COOKIE_DOMAINS"
+AUTH_HOSTS="$SPRW_AUTHELIA_AUTH_HOSTS"
+ROUTER_RULE="$SPRW_AUTHELIA_ROUTER_RULE"
+DEFAULT_REDIRECTION_URL="$SPRW_AUTHELIA_DEFAULT_REDIRECTION_URL"
+DEFAULT_POLICY="$SPRW_AUTHELIA_DEFAULT_POLICY"
+TOTP_ISSUER="$SPRW_AUTHELIA_TOTP_ISSUER"
+LDAP_SERVER_HOST="$SPRW_AUTHELIA_LDAP_SERVER_HOST"
+LDAP_BASE_DN="$SPRW_AUTHELIA_LDAP_BASE_DN"
+LDAP_BIND_DN="$SPRW_AUTHELIA_LDAP_BIND_DN"
+LDAP_USERNAME_ATTRIBUTE="$SPRW_AUTHELIA_LDAP_USERNAME_ATTRIBUTE"
+SMTP_HOST="$SPRW_AUTHELIA_SMTP_HOST"
+SMTP_PORT="$SPRW_AUTHELIA_SMTP_PORT"
+SMTP_USER="$SPRW_AUTHELIA_SMTP_USER"
+SMTP_IDENTIFIER="$SPRW_AUTHELIA_SMTP_IDENTIFIER"
+SMTP_SENDER="$SPRW_AUTHELIA_SMTP_SENDER"
+APPDOMAIN="$SPRW__APPDOMAIN"
+VOLUME_MODE="$SPRW__VOLUME_MODE"
+HTTP_REDIRECT="$SPRW__HTTP_REDIRECT"
+LETSENCRYPT_METHOD="$SPRW__LETSENCRYPT_METHOD"
+EXTERNAL_ACCESS="$SPRW__EXTERNAL_ACCESS"
