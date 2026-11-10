@@ -1,0 +1,188 @@
+#!/bin/bash
+# Default variables for the app "jitsi"
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Two roles, same app name:
+#   Host (shared JVB, once per server):
+#     app.sh jitsi add _host_
+#     app.sh jitsi add _host_ --var JVB_ADVERTISE_IPS=203.0.113.10
+#     Stack name: jitsi
+#   Customer (own web + Prosody + Jicofo, 0-1 per customer):
+#     app.sh jitsi add <customer> --var APPDOMAIN=meet.example.com
+#     app.sh jitsi add <customer> --var APPDOMAIN=meet.example.com --var JITSI_WHITEBOARD=true
+#     Stack name: jitsi_c_<customer>
+#     Do not pass the meeting host as a positional domain (that would create
+#     a multi-instance stack jitsi_d_<domain>).
+#
+# The first customer install installs the host app automatically (see
+# SPRW__REQUIRES_HOST_APPS below).
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='jitsi'
+SPRW__APP_PREFIX='JITSI'
+
+# Host-level apps that must exist before a non-host instance is installed.
+# app.sh installs each missing entry under customer "_host_" first.
+# Ignored when this instance itself is being installed for "_host_".
+SPRW__REQUIRES_HOST_APPS='jitsi'
+
+# Global
+SPRW__APPDOMAIN='!!APPDOMAIN!!'
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'
+
+# Image pins (override with --var if needed)
+SPRW_JITSI_IMAGE_REPO='!!IMAGE_REPO!!'
+SPRW_JITSI_IMAGE_VERSION='!!IMAGE_VERSION!!'
+SPRW_JITSI_WHITEBOARD_IMAGE='!!WHITEBOARD_IMAGE!!'
+SPRW_JITSI_TIMEZONE='!!TIMEZONE!!'
+
+# Host JVB
+SPRW_JITSI_JVB_PORT='!!JVB_PORT!!'
+SPRW_JITSI_JVB_ADVERTISE_IPS='!!JVB_ADVERTISE_IPS!!'
+SPRW_JITSI_JVB_STUN_SERVERS='!!JVB_STUN_SERVERS!!'
+SPRW_JITSI_JVB_MEM_LIMIT='!!JVB_MEM_LIMIT!!'
+SPRW_JITSI_JVB_MAX_MEMORY='!!JVB_MAX_MEMORY!!'
+
+# Customer container limits
+SPRW_JITSI_WEB_MEM_LIMIT='!!WEB_MEM_LIMIT!!'
+SPRW_JITSI_PROSODY_MEM_LIMIT='!!PROSODY_MEM_LIMIT!!'
+SPRW_JITSI_JICOFO_MEM_LIMIT='!!JICOFO_MEM_LIMIT!!'
+SPRW_JITSI_WHITEBOARD_MEM_LIMIT='!!WHITEBOARD_MEM_LIMIT!!'
+SPRW_JITSI_JIBRI_MEM_LIMIT='!!JIBRI_MEM_LIMIT!!'
+
+# Options (Docusaurus buttons; true/false)
+SPRW_JITSI_WHITEBOARD='!!JITSI_WHITEBOARD!!'
+SPRW_JITSI_RECORDING='!!JITSI_RECORDING!!'
+
+# Customer UI / branding (used on the customer stack)
+SPRW_JITSI_APP_NAME='!!APP_NAME!!'
+SPRW_JITSI_DEFAULT_LANGUAGE='!!DEFAULT_LANGUAGE!!'
+SPRW_JITSI_ENABLE_AUTH='!!ENABLE_AUTH!!'
+SPRW_JITSI_ENABLE_GUESTS='!!ENABLE_GUESTS!!'
+SPRW_JITSI_ENABLE_PREJOIN_PAGE='!!ENABLE_PREJOIN_PAGE!!'
+SPRW_JITSI_RESOLUTION='!!RESOLUTION!!'
+SPRW_JITSI_BRANDING_DATA_URL='!!BRANDING_DATA_URL!!'
+
+# Secrets — generated once by app.sh, stored in this config and in DATA_DIR/secrets only
+SPRW_JITSI_JICOFO_AUTH_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_JITSI_JVB_AUTH_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_JITSI_JIBRI_XMPP_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_JITSI_JIBRI_RECORDER_PASSWORD="!!NEW_PASSWORD!!"
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, change the values above instead (defaults for empty values).
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW_JITSI_IMAGE_REPO" ] || [[ "$SPRW_JITSI_IMAGE_REPO" == *'!!'* ]]; then
+	SPRW_JITSI_IMAGE_REPO=jitsi
+fi
+if [ -z "$SPRW_JITSI_IMAGE_VERSION" ] || [[ "$SPRW_JITSI_IMAGE_VERSION" == *'!!'* ]]; then
+	SPRW_JITSI_IMAGE_VERSION=stable-11248-3
+fi
+if [ -z "$SPRW_JITSI_WHITEBOARD_IMAGE" ] || [[ "$SPRW_JITSI_WHITEBOARD_IMAGE" == *'!!'* ]]; then
+	SPRW_JITSI_WHITEBOARD_IMAGE=jitsi/excalidraw-backend:2026.10.0
+fi
+if [ -z "$SPRW_JITSI_TIMEZONE" ] || [[ "$SPRW_JITSI_TIMEZONE" == *'!!'* ]]; then
+	SPRW_JITSI_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_JITSI_JVB_PORT" ] || [[ "$SPRW_JITSI_JVB_PORT" == *'!!'* ]]; then
+	SPRW_JITSI_JVB_PORT=10000
+fi
+if [ -z "$SPRW_JITSI_JVB_STUN_SERVERS" ] || [[ "$SPRW_JITSI_JVB_STUN_SERVERS" == *'!!'* ]]; then
+	SPRW_JITSI_JVB_STUN_SERVERS=meet-jit-si-turnrelay.jitsi.net:443
+fi
+if [ -z "$SPRW_JITSI_JVB_MEM_LIMIT" ] || [[ "$SPRW_JITSI_JVB_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_JITSI_JVB_MEM_LIMIT=768m
+fi
+if [ -z "$SPRW_JITSI_JVB_MAX_MEMORY" ] || [[ "$SPRW_JITSI_JVB_MAX_MEMORY" == *'!!'* ]]; then
+	SPRW_JITSI_JVB_MAX_MEMORY=640m
+fi
+if [ -z "$SPRW_JITSI_WEB_MEM_LIMIT" ] || [[ "$SPRW_JITSI_WEB_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_JITSI_WEB_MEM_LIMIT=128m
+fi
+if [ -z "$SPRW_JITSI_PROSODY_MEM_LIMIT" ] || [[ "$SPRW_JITSI_PROSODY_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_JITSI_PROSODY_MEM_LIMIT=128m
+fi
+if [ -z "$SPRW_JITSI_JICOFO_MEM_LIMIT" ] || [[ "$SPRW_JITSI_JICOFO_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_JITSI_JICOFO_MEM_LIMIT=384m
+fi
+if [ -z "$SPRW_JITSI_WHITEBOARD_MEM_LIMIT" ] || [[ "$SPRW_JITSI_WHITEBOARD_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_JITSI_WHITEBOARD_MEM_LIMIT=256m
+fi
+if [ -z "$SPRW_JITSI_JIBRI_MEM_LIMIT" ] || [[ "$SPRW_JITSI_JIBRI_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_JITSI_JIBRI_MEM_LIMIT=2048m
+fi
+if [ -z "$SPRW_JITSI_WHITEBOARD" ] || [[ "$SPRW_JITSI_WHITEBOARD" == *'!!'* ]]; then
+	SPRW_JITSI_WHITEBOARD=false
+fi
+if [ -z "$SPRW_JITSI_RECORDING" ] || [[ "$SPRW_JITSI_RECORDING" == *'!!'* ]]; then
+	SPRW_JITSI_RECORDING=false
+fi
+if [ -z "$SPRW_JITSI_APP_NAME" ] || [[ "$SPRW_JITSI_APP_NAME" == *'!!'* ]]; then
+	SPRW_JITSI_APP_NAME=Jitsi Meet
+fi
+if [ -z "$SPRW_JITSI_DEFAULT_LANGUAGE" ] || [[ "$SPRW_JITSI_DEFAULT_LANGUAGE" == *'!!'* ]]; then
+	SPRW_JITSI_DEFAULT_LANGUAGE=de
+fi
+if [ -z "$SPRW_JITSI_ENABLE_AUTH" ] || [[ "$SPRW_JITSI_ENABLE_AUTH" == *'!!'* ]]; then
+	SPRW_JITSI_ENABLE_AUTH=0
+fi
+if [ -z "$SPRW_JITSI_ENABLE_GUESTS" ] || [[ "$SPRW_JITSI_ENABLE_GUESTS" == *'!!'* ]]; then
+	SPRW_JITSI_ENABLE_GUESTS=1
+fi
+if [ -z "$SPRW_JITSI_ENABLE_PREJOIN_PAGE" ] || [[ "$SPRW_JITSI_ENABLE_PREJOIN_PAGE" == *'!!'* ]]; then
+	SPRW_JITSI_ENABLE_PREJOIN_PAGE=1
+fi
+if [ -z "$SPRW_JITSI_RESOLUTION" ] || [[ "$SPRW_JITSI_RESOLUTION" == *'!!'* ]]; then
+	SPRW_JITSI_RESOLUTION=720
+fi
+
+# ------------------------------------------------------------------------------------------------
+# Bridge for app.sh: placeholders are resolved by their bare name.
+# JITSI_WHITEBOARD / JITSI_RECORDING are the names used in Jinja2 if-blocks
+# (Docusaurus option buttons).
+IMAGE_REPO=$SPRW_JITSI_IMAGE_REPO
+IMAGE_VERSION=$SPRW_JITSI_IMAGE_VERSION
+WHITEBOARD_IMAGE=$SPRW_JITSI_WHITEBOARD_IMAGE
+TIMEZONE=$SPRW_JITSI_TIMEZONE
+JVB_PORT=$SPRW_JITSI_JVB_PORT
+JVB_ADVERTISE_IPS=$SPRW_JITSI_JVB_ADVERTISE_IPS
+JVB_STUN_SERVERS=$SPRW_JITSI_JVB_STUN_SERVERS
+JVB_MEM_LIMIT=$SPRW_JITSI_JVB_MEM_LIMIT
+JVB_MAX_MEMORY=$SPRW_JITSI_JVB_MAX_MEMORY
+WEB_MEM_LIMIT=$SPRW_JITSI_WEB_MEM_LIMIT
+PROSODY_MEM_LIMIT=$SPRW_JITSI_PROSODY_MEM_LIMIT
+JICOFO_MEM_LIMIT=$SPRW_JITSI_JICOFO_MEM_LIMIT
+WHITEBOARD_MEM_LIMIT=$SPRW_JITSI_WHITEBOARD_MEM_LIMIT
+JIBRI_MEM_LIMIT=$SPRW_JITSI_JIBRI_MEM_LIMIT
+JITSI_WHITEBOARD=$SPRW_JITSI_WHITEBOARD
+JITSI_RECORDING=$SPRW_JITSI_RECORDING
+APP_NAME=$SPRW_JITSI_APP_NAME
+DEFAULT_LANGUAGE=$SPRW_JITSI_DEFAULT_LANGUAGE
+ENABLE_AUTH=$SPRW_JITSI_ENABLE_AUTH
+ENABLE_GUESTS=$SPRW_JITSI_ENABLE_GUESTS
+ENABLE_PREJOIN_PAGE=$SPRW_JITSI_ENABLE_PREJOIN_PAGE
+RESOLUTION=$SPRW_JITSI_RESOLUTION
+BRANDING_DATA_URL=$SPRW_JITSI_BRANDING_DATA_URL
+APPDOMAIN=$SPRW__APPDOMAIN
+VOLUME_MODE=$SPRW__VOLUME_MODE
+HTTP_REDIRECT=$SPRW__HTTP_REDIRECT
+LETSENCRYPT_METHOD=$SPRW__LETSENCRYPT_METHOD
+EXTERNAL_ACCESS=$SPRW__EXTERNAL_ACCESS
+CUSTOMER=$SPRW__CUSTOMER
