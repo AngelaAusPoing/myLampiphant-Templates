@@ -1,0 +1,11 @@
+# === myLampiphant variables ===
+# This file is sent to Komodo. No passwords, keys or tokens belong here.
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# === openvpn (non-secret) ===
+SPRW_OVPN_TRANSPORT=!!OVPN_TRANSPORT!!
+SPRW_OVPN_PORT=!!OVPN_PORT!!
+SPRW_OVPN_BACKEND_PORT=!!OVPN_BACKEND_PORT!!
+SPRW_OVPN_IPV4_CIDR=!!OVPN_IPV4_CIDR!!
+SPRW_OVPN_ENDPOINT=!!OVPN_ENDPOINT!!

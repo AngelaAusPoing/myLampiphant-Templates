@@ -1,0 +1,84 @@
+#!/bin/bash
+# Default variables for the app "openvpn" (hwdsl2/openvpn-server, one stack per customer)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (0-1 stacks per customer; optional, independently of WireGuard):
+#   app.sh openvpn add <customer>
+#   app.sh openvpn add <customer> --var OVPN_TRANSPORT=tcp443_sslh --var OVPN_SUBNET_INDEX=2
+#
+# The stack is named openvpn_c_<customer>.
+# udp1194 publishes UDP !!OVPN_PORT!! on the host.
+# tcp443_sslh listens on TCP 443 in the container and publishes only
+# 127.0.0.1:!!OVPN_BACKEND_PORT!!. Public TCP 443 / sslh / Traefik are not
+# changed by this app; wiring them needs a maintenance window and Angela's approval.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='openvpn'
+SPRW__APP_PREFIX='OVPN'
+
+# Global
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'
+
+# App-specific variables (SPRW_OVPN_*)
+SPRW_OVPN_IMAGE='!!OVPN_IMAGE!!'                 # pinned multi-arch digest, arm64-verified
+SPRW_OVPN_TRANSPORT='!!OVPN_TRANSPORT!!'         # udp1194 | tcp443_sslh
+SPRW_OVPN_PORT='!!OVPN_PORT!!'                   # host/container UDP listen port (udp1194)
+SPRW_OVPN_BACKEND_PORT='!!OVPN_BACKEND_PORT!!'   # localhost TCP port mapped to container 443 (tcp443_sslh)
+SPRW_OVPN_MEM_LIMIT='!!OVPN_MEM_LIMIT!!'         # compose mem_limit (e.g. 256m)
+SPRW_OVPN_ENDPOINT='!!OVPN_ENDPOINT!!'           # public host clients connect to (IP or FQDN)
+SPRW_OVPN_SUBNET_INDEX='!!OVPN_SUBNET_INDEX!!'   # <n> in 10.51.<n>.0/24; shared with WireGuard; auto-allocated if empty
+SPRW_OVPN_IPV4_CIDR='!!OVPN_IPV4_CIDR!!'         # OpenVPN client subnet, e.g. 10.51.1.0/24
+SPRW_OVPN_DNS='!!OVPN_DNS!!'                     # comma-separated resolvers for clients (two used)
+SPRW_OVPN_CLIENT_NAME='!!OVPN_CLIENT_NAME!!'     # first client cert the image creates on first start
+SPRW_OVPN_TIMEZONE='!!TIMEZONE!!'
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, change the values above instead (defaults for empty values).
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=false
+fi
+if [ -z "$SPRW_OVPN_IMAGE" ] || [[ "$SPRW_OVPN_IMAGE" == *'!!'* ]]; then
+	SPRW_OVPN_IMAGE=hwdsl2/openvpn-server:latest@sha256:5b47bd53222328322f2af9984acfe42b91ab23f76c3dbc4086b53d4fc8325030
+fi
+if [ -z "$SPRW_OVPN_TRANSPORT" ] || [[ "$SPRW_OVPN_TRANSPORT" == *'!!'* ]]; then
+	SPRW_OVPN_TRANSPORT=udp1194
+fi
+if [ -z "$SPRW_OVPN_PORT" ] || [[ "$SPRW_OVPN_PORT" == *'!!'* ]]; then
+	SPRW_OVPN_PORT=1194
+fi
+if [ -z "$SPRW_OVPN_BACKEND_PORT" ] || [[ "$SPRW_OVPN_BACKEND_PORT" == *'!!'* ]]; then
+	SPRW_OVPN_BACKEND_PORT=1194
+fi
+if [ -z "$SPRW_OVPN_MEM_LIMIT" ] || [[ "$SPRW_OVPN_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_OVPN_MEM_LIMIT=256m
+fi
+if [ -z "$SPRW_OVPN_DNS" ] || [[ "$SPRW_OVPN_DNS" == *'!!'* ]]; then
+	SPRW_OVPN_DNS='1.1.1.1,9.9.9.9'
+fi
+if [ -z "$SPRW_OVPN_CLIENT_NAME" ] || [[ "$SPRW_OVPN_CLIENT_NAME" == *'!!'* ]]; then
+	SPRW_OVPN_CLIENT_NAME=initial
+fi
+if [ -z "$SPRW_OVPN_TIMEZONE" ] || [[ "$SPRW_OVPN_TIMEZONE" == *'!!'* ]]; then
+	SPRW_OVPN_TIMEZONE=Europe/Berlin
+fi
+
+# ------------------------------------------------------------------------------------------------
+# Bridge for app.sh: placeholders are resolved by their bare name.
+OVPN_IMAGE=$SPRW_OVPN_IMAGE
+OVPN_TRANSPORT=$SPRW_OVPN_TRANSPORT
+OVPN_PORT=$SPRW_OVPN_PORT
+OVPN_BACKEND_PORT=$SPRW_OVPN_BACKEND_PORT
+OVPN_MEM_LIMIT=$SPRW_OVPN_MEM_LIMIT
+OVPN_ENDPOINT=$SPRW_OVPN_ENDPOINT
+OVPN_SUBNET_INDEX=$SPRW_OVPN_SUBNET_INDEX
+OVPN_IPV4_CIDR=$SPRW_OVPN_IPV4_CIDR
+OVPN_DNS=$SPRW_OVPN_DNS
+OVPN_CLIENT_NAME=$SPRW_OVPN_CLIENT_NAME
+TIMEZONE=$SPRW_OVPN_TIMEZONE
