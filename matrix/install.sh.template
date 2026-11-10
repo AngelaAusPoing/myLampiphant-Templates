@@ -112,10 +112,12 @@ def set_scalar(text, key, value, quote=True):
 
 def replace_block(text, key, block):
     # Replace a top-level YAML block (key: plus indented body) or append it.
-    pattern = re.compile(r"^" + re.escape(key) + r":(?:\n(?:[ \t].*)?)*", re.M)
+    # Consume the trailing newline so the next key is not glued onto the last line.
+    pattern = re.compile(r"^" + re.escape(key) + r":(?:\n[ \t].*)*(?:\n)?", re.M)
+    block = block.rstrip() + "\n"
     if pattern.search(text):
-        return pattern.sub(block.rstrip(), text, count=1)
-    return text.rstrip() + "\n\n" + block + "\n"
+        return pattern.sub(block, text, count=1)
+    return text.rstrip() + "\n\n" + block
 
 pg = os.environ["POSTGRES_PASSWORD"]
 secret = os.environ["REGISTRATION_SHARED_SECRET"]
