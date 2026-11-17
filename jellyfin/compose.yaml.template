@@ -28,6 +28,8 @@ services:
       - customer-net
       {%- if SPRW_JELLYFIN_AUTH == "ldap" %}
       - ldap-shared
+      {%- elif SPRW_JELLYFIN_AUTH == "plain" %}
+      # plain: Jellyfin's own user accounts, no LDAP network
       {%- endif %}
     volumes:
     {%- if SPRW__VOLUME_MODE == "bind" %}

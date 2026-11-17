@@ -43,6 +43,8 @@ services:
       # Trust the Remote-User header only from these sources (Traefik on proxy-shared).
       - ND_EXTAUTH_TRUSTEDSOURCES=${SPRW_NAVIDROME_TRUSTED_SOURCES}
       - ND_EXTAUTH_USERHEADER=Remote-User
+      {%- elif SPRW_NAVIDROME_AUTH == "plain" %}
+      # plain: Navidrome's own logins, no reverse-proxy authentication
       {%- endif %}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:4533/ping || exit 1"]

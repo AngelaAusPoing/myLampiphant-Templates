@@ -51,6 +51,8 @@ services:
       - backend
       {%- if SPRW_JOPLIN_AUTH == "ldap" %}
       - ldap-shared
+      {%- elif SPRW_JOPLIN_AUTH == "plain" %}
+      # plain: Joplin's own accounts, no LDAP network
       {%- endif %}
     {%- if SPRW_JOPLIN_AUTH == "ldap" %}
     volumes:
@@ -72,7 +74,11 @@ services:
       - POSTGRES_USER=${SPRW_JOPLIN_DB_USER:-joplin}
       - POSTGRES_PASSWORD=${SPRW_JOPLIN_DB_PASSWORD}
       - POSTGRES_DATABASE=${SPRW_JOPLIN_DB_NAME:-joplin}
-      - SIGNUP_ENABLED=${SPRW_JOPLIN_SIGNUP:-false}
+      {%- if SPRW_JOPLIN_SIGNUP == "true" %}
+      - SIGNUP_ENABLED=true
+      {%- else %}
+      - SIGNUP_ENABLED=false
+      {%- endif %}
       - NODE_OPTIONS=--max-old-space-size=${SPRW_JOPLIN_NODE_MAX_OLD_SPACE:-384}
       {%- if SPRW_JOPLIN_AUTH == "ldap" %}
       - LDAP_1_ENABLED=true

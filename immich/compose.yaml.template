@@ -138,6 +138,8 @@ services:
       - POSTGRES_INITDB_ARGS=--data-checksums
       {%- if SPRW_IMMICH_DB_STORAGE == "hdd" %}
       - DB_STORAGE_TYPE=HDD
+      {%- elif SPRW_IMMICH_DB_STORAGE == "ssd" %}
+      - DB_STORAGE_TYPE=SSD
       {%- endif %}
     healthcheck:
       disable: false
