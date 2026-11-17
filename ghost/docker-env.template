@@ -20,13 +20,14 @@ SPRW_GHOST_DB_USER=ghost
 SPRW_GHOST_DB_ROOT_PASSWORD=!!DB_ROOT_PASSWORD!!
 SPRW_GHOST_DB_PASSWORD=!!DB_PASSWORD!!
 
-# === Mail (SMTP via the host mailserver). Leave MAIL_ENABLED=false until
-# a real mailbox exists; do not invent credentials here. ===
-SPRW_GHOST_MAIL_ENABLED=false
-SPRW_GHOST_MAIL_HOST=mail.lapha.de
-SPRW_GHOST_MAIL_PORT=587
-SPRW_GHOST_MAIL_SECURE=false
-SPRW_GHOST_MAIL_REQUIRE_TLS=true
-SPRW_GHOST_MAIL_USER=
-SPRW_GHOST_MAIL_PASSWORD=
-SPRW_GHOST_MAIL_FROM=Ghost <noreply@!!APPDOMAIN!!>
+# === Mail (SMTP via the host mailserver). Values come from the persistent
+# config (SPRW_GHOST_MAIL_* in profile); MAIL_ENABLED stays false until a real
+# mailbox exists. Do not invent credentials here. ===
+SPRW_GHOST_MAIL_ENABLED=!!MAIL_ENABLED!!
+SPRW_GHOST_MAIL_HOST=!!MAIL_HOST!!
+SPRW_GHOST_MAIL_PORT=!!MAIL_PORT!!
+SPRW_GHOST_MAIL_SECURE=!!MAIL_SECURE!!
+SPRW_GHOST_MAIL_REQUIRE_TLS=!!MAIL_REQUIRE_TLS!!
+SPRW_GHOST_MAIL_USER=!!MAIL_USER!!
+SPRW_GHOST_MAIL_PASSWORD=!!MAIL_PASSWORD!!
+SPRW_GHOST_MAIL_FROM=!!MAIL_FROM!!

@@ -81,10 +81,34 @@ case "${1:-}" in
         if ! ls "$DATA_DIR"/config/rspamd/dkim/*-"${SELECTOR}-${domain}".private.txt >/dev/null 2>&1; then
             setup config dkim keytype rsa keysize 2048 selector "$SELECTOR" domain "$domain" >/dev/null
         fi
-        # ARC signing uses the same keys/selectors as DKIM signing
-        if [ -f "$DATA_DIR/config/rspamd/override.d/dkim_signing.conf" ]; then
-            cp "$DATA_DIR/config/rspamd/override.d/dkim_signing.conf" "$DATA_DIR/config/rspamd/override.d/arc.conf"
-            docker exec "$CONTAINER" sh -c 'cp /tmp/docker-mailserver/rspamd/override.d/arc.conf /etc/rspamd/override.d/arc.conf && chown _rspamd:_rspamd /etc/rspamd/override.d/arc.conf && supervisorctl restart rspamd >/dev/null'
+        # DMS writes dkim_signing.conf only for the first domain ("exists, not supplying a default").
+        # For every further domain, add its block to the existing "domain { ... }" section (idempotent).
+        conf="$DATA_DIR/config/rspamd/override.d/dkim_signing.conf"
+        if [ -f "$conf" ] && ! grep -qF "    ${domain} {" "$conf"; then
+            keyfile=$(cd "$DATA_DIR/config/rspamd/dkim" && ls -- *-"${SELECTOR}-${domain}".private.txt | head -1)
+            cp -a "$conf" "${conf}.bak.$(date +%Y%m%d_%H%M%S)"
+            tmp=$(mktemp)
+            DOMAIN="$domain" KEYFILE="$keyfile" SEL="$SELECTOR" awk '
+                { lines[NR] = $0 }
+                /^}[[:space:]]*$/ { last = NR }
+                END {
+                    for (i = 1; i <= NR; i++) {
+                        if (i == last) {
+                            printf "    %s {\n", ENVIRON["DOMAIN"]
+                            printf "        path = \"/tmp/docker-mailserver/rspamd/dkim/%s\";\n", ENVIRON["KEYFILE"]
+                            printf "        selector = \"%s\";\n    }\n", ENVIRON["SEL"]
+                        }
+                        print lines[i]
+                    }
+                }' "$conf" > "$tmp"
+            cat "$tmp" > "$conf"
+            rm -f "$tmp"
+            echo "Added ${domain} to ${conf}" >&2
+        fi
+        # ARC signing uses the same keys/selectors as DKIM signing; rspamd reads both from /etc/rspamd/override.d
+        if [ -f "$conf" ]; then
+            cp "$conf" "$DATA_DIR/config/rspamd/override.d/arc.conf"
+            docker exec "$CONTAINER" sh -c 'for f in dkim_signing.conf arc.conf; do cp /tmp/docker-mailserver/rspamd/override.d/$f /etc/rspamd/override.d/$f && chown _rspamd:_rspamd /etc/rspamd/override.d/$f; done && supervisorctl restart rspamd >/dev/null'
         fi
         dkim_record "$domain"
         ;;
