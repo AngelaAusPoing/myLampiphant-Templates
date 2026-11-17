@@ -31,10 +31,19 @@ chown -R "${PUID}:${PGID}" "$SPRW__DATA_DIR/config" "$SPRW__DATA_DIR/cache"
 echo "Installation finished."
 echo "Jellyfin URL: https://${SPRW__APPDOMAIN}"
 echo "Media folder (read-only in the container, path /media): ${MEDIA_DIR}"
+{%- if SPRW_JELLYFIN_SETUP == "auto" %}
+echo "post-install.sh finishes the setup wizard right after the first start (admin: see SPRW_JELLYFIN_ADMIN_USER / _PASSWORD in the persistent config)."
+{%- elif SPRW_JELLYFIN_SETUP == "manual" %}
 echo "After the first start, finish the setup wizard at https://${SPRW__APPDOMAIN} (creates the admin account)."
+echo "Then enter that admin in SPRW_JELLYFIN_ADMIN_USER / _PASSWORD and run: app.sh jellyfin post-install ${SPRW__CUSTOMER}"
+{%- endif %}
 {%- if SPRW_JELLYFIN_AUTH == "ldap" %}
-echo "LDAP: install the plugin 'LDAP Authentication' (Dashboard > Plugins > Catalog) and set:"
-echo "  server !!LDAP_SERVER!!, port 389, base DN !!LDAP_BASE_DN!!, bind user !!LDAP_BIND_DN!!"
-echo "  admin filter: memberOf=cn=!!LDAP_ADMIN_GROUP!!,ou=groups,o=${SPRW__CUSTOMER},!!LDAP_SUFFIX!!"
-echo "  The bind password is the host read-only LDAP account (not printed here)."
+echo "LDAP: post-install.sh installs the 'LDAP Authentication' plugin and configures it"
+echo "  (server !!LDAP_SERVER!!, base DN !!LDAP_BASE_DN!!, admins: group !!LDAP_ADMIN_GROUP!!)."
+echo "  The bind password is read from !!LDAP_BIND_PW_FILE!! (not printed)."
+if [ ! -s "!!LDAP_BIND_PW_FILE!!" ]; then
+    echo "WARNING: !!LDAP_BIND_PW_FILE!! is missing or empty - post-install.sh will stop at the LDAP step." >&2
+fi
+{%- elif SPRW_JELLYFIN_AUTH == "plain" %}
+echo "Login with Jellyfin's own user accounts (AUTH=plain)."
 {%- endif %}
