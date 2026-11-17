@@ -1,0 +1,99 @@
+#!/bin/bash
+# Default variables for the app "odoo" (Odoo ERP + PostgreSQL)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files. The database password is generated once here and never
+# regenerated; app.sh only reads it from this file.
+#
+# Install (one stack per customer):
+#   app.sh odoo add <customer>
+#   app.sh odoo add <customer> --var APPDOMAIN=erp.example.com
+#
+# The stack is named odoo_c_<customer>, e.g. odoo_c_lapha_de.
+#
+# Options (Jinja2 / Docusaurus buttons):
+#   SPRW_ODOO_DB_INIT: true (default) | false
+#     true  = on the very first start a wrapper script initialises the database
+#             (odoo -i base) and then starts Odoo; later starts skip this step
+#     false = plain Odoo start, create the database in the Odoo web UI
+#
+# Do not change SPRW_ODOO_DB_IMAGE to another PostgreSQL major version on an
+# existing installation (the data directory belongs to one major version).
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='odoo'
+SPRW__APP_PREFIX='ODOO'
+
+# Global environment variables that are used in the app's templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. erp.example.com (default: odoo.<domain>)
+
+# Global Jinja2 variables that are used in the app's templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Homer dashboard tile (optional; app.sh default is HOMER_LINK=true)
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Odoo'
+SPRW__HOMER_ICON='fas fa-file-invoice'
+SPRW__HOMER_GROUP='Apps'
+
+# App-specific variables (SPRW_ODOO_*)
+SPRW_ODOO_IMAGE='!!IMAGE!!'                         # official Odoo image (multi-arch)
+SPRW_ODOO_DB_IMAGE='!!DB_IMAGE!!'                   # PostgreSQL image (multi-arch), keep the major version
+SPRW_ODOO_PROXY_MODE='!!PROXY_MODE!!'               # True behind Traefik
+SPRW_ODOO_DB_INIT='!!DB_INIT!!'                     # true or false
+SPRW_ODOO_WITHOUT_DEMO='!!WITHOUT_DEMO!!'           # modules without demo data on init (all)
+SPRW_ODOO_INTERNAL_SOURCERANGE='!!INTERNAL_SOURCERANGE!!'  # EXTERNAL_ACCESS=false: allowed client networks
+SPRW_ODOO_DB_NAME='!!DB_NAME!!'
+SPRW_ODOO_DB_USER='!!DB_USER!!'
+SPRW_ODOO_DB_PASSWORD="!!NEW_PASSWORD!!"
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__APPDOMAIN" ] || [[ "$SPRW__APPDOMAIN" == *'!!'* ]]; then
+	SPRW__APPDOMAIN=odoo.${SPRW__DOMAIN:-example.com}
+fi
+
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW__HOMER_LINK" ] || [[ "$SPRW__HOMER_LINK" == *'!!'* ]]; then
+	SPRW__HOMER_LINK=true
+fi
+
+if [ -z "$SPRW_ODOO_IMAGE" ] || [[ "$SPRW_ODOO_IMAGE" == *'!!'* ]]; then
+	SPRW_ODOO_IMAGE=odoo:18.0
+fi
+if [ -z "$SPRW_ODOO_DB_IMAGE" ] || [[ "$SPRW_ODOO_DB_IMAGE" == *'!!'* ]]; then
+	SPRW_ODOO_DB_IMAGE=postgres:16-alpine
+fi
+if [ -z "$SPRW_ODOO_PROXY_MODE" ] || [[ "$SPRW_ODOO_PROXY_MODE" == *'!!'* ]]; then
+	SPRW_ODOO_PROXY_MODE=True
+fi
+if [ -z "$SPRW_ODOO_DB_INIT" ] || [[ "$SPRW_ODOO_DB_INIT" == *'!!'* ]]; then
+	SPRW_ODOO_DB_INIT=true
+fi
+if [ -z "$SPRW_ODOO_WITHOUT_DEMO" ] || [[ "$SPRW_ODOO_WITHOUT_DEMO" == *'!!'* ]]; then
+	SPRW_ODOO_WITHOUT_DEMO=all
+fi
+if [ -z "$SPRW_ODOO_INTERNAL_SOURCERANGE" ] || [[ "$SPRW_ODOO_INTERNAL_SOURCERANGE" == *'!!'* ]]; then
+	SPRW_ODOO_INTERNAL_SOURCERANGE=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.1/32
+fi
+if [ -z "$SPRW_ODOO_DB_NAME" ] || [[ "$SPRW_ODOO_DB_NAME" == *'!!'* ]]; then
+	SPRW_ODOO_DB_NAME=odoo
+fi
+if [ -z "$SPRW_ODOO_DB_USER" ] || [[ "$SPRW_ODOO_DB_USER" == *'!!'* ]]; then
+	SPRW_ODOO_DB_USER=odoo
+fi

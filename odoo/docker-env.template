@@ -1,7 +1,15 @@
-# === myLampiphant variables ===
-APPDOMAIN=!!APPDOMAIN!!
-CUSTOMER=!!CUSTOMER!!
-STACKNAME=!!STACKNAME!!
+# === Stack variables (SPRW__*) ===
+# This file is sent to Komodo as the stack .env. Generated secrets belong here
+# and must not be committed.
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__APPDOMAIN=!!APPDOMAIN!!
+SPRW__STACKNAME=!!STACKNAME!!
 
-# === PostgreSQL ===
-POSTGRES_PASSWORD=!!NEW_KEY!!
+# === Images (defaults; override in persistent config) ===
+SPRW_ODOO_IMAGE=!!IMAGE!!
+SPRW_ODOO_DB_IMAGE=!!DB_IMAGE!!
+
+# === Database (password comes from the persistent config, never regenerated) ===
+SPRW_ODOO_DB_NAME=!!DB_NAME!!
+SPRW_ODOO_DB_USER=!!DB_USER!!
+SPRW_ODOO_DB_PASSWORD=!!DB_PASSWORD!!

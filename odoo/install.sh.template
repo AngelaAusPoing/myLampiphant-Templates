@@ -1,53 +1,58 @@
 #!/bin/bash
-CUSTOMER="!!CUSTOMER!!"
-APPDOMAIN="!!APPDOMAIN!!"
-DATA_DIR="!!DATA_DIR!!"
-COMPOSE_DIR="!!COMPOSE_DIR!!"
+# Prepare Odoo data directories and networks. Do not print secrets.
+set -euo pipefail
 
-POSTGRES_PASSWORD="!!POSTGRES_PASSWORD!!"
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__APPDOMAIN="!!APPDOMAIN!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
 
-echo "Installiere Odoo für ${CUSTOMER} (${APPDOMAIN})..."
+echo "Installing Odoo for ${SPRW__CUSTOMER} (${SPRW__APPDOMAIN})..."
 
-mkdir -p "$COMPOSE_DIR"
-mkdir -p "$DATA_DIR/postgres"
-mkdir -p "$DATA_DIR/odoo-data"
-mkdir -p "$DATA_DIR/addons"
+mkdir -p "$SPRW__COMPOSE_DIR"
+mkdir -p "$SPRW__DATA_DIR/postgres"
+mkdir -p "$SPRW__DATA_DIR/odoo-data/sessions"
+mkdir -p "$SPRW__DATA_DIR/addons"
 
 # shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
 source /opt/docker/_scripts_/ensure-networks.sh
-ensure_mylampiphant_networks "$CUSTOMER"
+ensure_shared_networks
+ensure_customer_network "$SPRW__CUSTOMER"
 
-# Wichtig: Odoo-Container läuft mit UID 100, Gruppe 101 (odoo), daher müssen die Verzeichnisse entsprechend berechtigt sein
-chown -R 100:101 "$DATA_DIR/postgres"
-chown -R 100:101 "$DATA_DIR/odoo-data"
-chown -R 100:101 "$DATA_DIR/addons"
-# Erstelle das sessions-Verzeichnis direkt (verhindert Permission Error)
-mkdir -p "$DATA_DIR/odoo-data/sessions"
-chown -R 100:101 "$DATA_DIR/odoo-data/sessions"
+# postgres:alpine runs as postgres (uid 70); the Odoo image runs as odoo (uid 100, gid 101).
+chown -R 70:70 "$SPRW__DATA_DIR/postgres"
+chown -R 100:101 "$SPRW__DATA_DIR/odoo-data"
+chown -R 100:101 "$SPRW__DATA_DIR/addons"
+{%- if SPRW_ODOO_DB_INIT == "true" %}
 
-# Erstelle das Odoo-Init-Skript für den ersten Start
-cat > "$DATA_DIR/init-odoo.sh" <<'SH'
+# Wrapper for the first start: initialise the database once (odoo -i base), then start Odoo.
+# An existing wrapper is kept unchanged.
+if [ ! -f "$SPRW__DATA_DIR/init-odoo.sh" ]; then
+cat > "$SPRW__DATA_DIR/init-odoo.sh" <<'SH'
 #!/bin/sh
 set -e
 
-ODOO_DB_NAME="!!ODOO_DB_NAME!!"
-ODOO_WITHOUT_DEMO="!!ODOO_WITHOUT_DEMO!!"
-ODOO_EXTRA_ARGS="!!ODOO_EXTRA_ARGS!!"
+ODOO_DB_NAME="!!DB_NAME!!"
+ODOO_WITHOUT_DEMO="!!WITHOUT_DEMO!!"
 
 if [ ! -f /var/lib/odoo/.odoo_initialized ]; then
   /entrypoint.sh odoo -d "$ODOO_DB_NAME" -i base --without-demo="$ODOO_WITHOUT_DEMO" --stop-after-init && touch /var/lib/odoo/.odoo_initialized
 fi
 
-exec /entrypoint.sh odoo $ODOO_EXTRA_ARGS
+exec /entrypoint.sh odoo "$@"
 SH
-chmod 750 "$DATA_DIR/init-odoo.sh"
-chown 100:101 "$DATA_DIR/init-odoo.sh"
+fi
+chmod 750 "$SPRW__DATA_DIR/init-odoo.sh"
+chown 100:101 "$SPRW__DATA_DIR/init-odoo.sh"
+{%- elif SPRW_ODOO_DB_INIT == "false" %}
+# DB_INIT=false: no init wrapper, the database is created in the Odoo web UI.
+{%- endif %}
 
-echo "✅ Installation abgeschlossen"
-echo "🌐 Odoo URL: https://${APPDOMAIN}"
-echo "📁 Daten: ${DATA_DIR}"
-echo "🐘 PostgreSQL Passwort: ${POSTGRES_PASSWORD}"
-echo ""
-echo "📝 Beim ersten Start: 1-2 Minuten warten (Datenbank-Initialisierung)"
-echo "   Master-Passwort: admin (beim ersten Login)"
-echo "   Hinweis: Der Odoo-Service führt beim ersten Start automatisch \"odoo -d ${ODOO_DB_NAME} -i base --without-demo=${ODOO_WITHOUT_DEMO} --stop-after-init\" aus."
+echo "Installation finished."
+echo "Odoo URL: https://${SPRW__APPDOMAIN}"
+echo "Data directory: ${SPRW__DATA_DIR}"
+echo "The database password is stored in the persistent config only (not printed)."
+{%- if SPRW_ODOO_DB_INIT == "true" %}
+echo "First start: wait 1-2 minutes while the database is initialised."
+{%- endif %}
+echo "Set a strong master password in Odoo (database manager) right after the first login."
