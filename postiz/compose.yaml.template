@@ -14,6 +14,9 @@
 #   SPRW_POSTIZ_REGISTRATION: open | closed
 #     open   = anyone can create an account (needed once for the first user)
 #     closed = new accounts only by invitation
+#   SPRW_POSTIZ_PROVIDER_<NAME>: true | false  (one switch per social network, see
+#     profile.template and pre-deploy.sh.template; switched-on networks without
+#     keys stay hidden until the keys are in the persistent config)
 #   SPRW_POSTIZ_OIDC: false | true
 #     true = additional "Sign in with ..." button for a generic OIDC provider
 #            (e.g. Authelia or Authentik). Client ID/secret come from the provider.
@@ -24,6 +27,9 @@ services:
     restart: unless-stopped
     mem_limit: ${SPRW_POSTIZ_MEM_LIMIT:-1536m}
     cpus: ${SPRW_POSTIZ_CPUS:-1.5}
+    # Social network keys + HIDDEN_PROVIDERS (chmod 600, written by pre-deploy.sh, not sent to Komodo)
+    env_file:
+      - /opt/docker-data/${SPRW__CUSTOMER:-customer_directory}/${SPRW__STACKNAME:-postiz_c_customer_directory}/secrets/providers.env
     networks:
       - proxy-shared
       - customer-net
@@ -61,45 +67,9 @@ services:
       - NEXT_PUBLIC_UPLOAD_DIRECTORY=/uploads
       - API_LIMIT=30
       - NX_ADD_PLUGINS=false
-      # Social network apps: create a developer app at each network and enter its
-      # keys in the persistent config. Networks without keys are left out.
-      {%- if SPRW_POSTIZ_X_API_KEY %}
-      - X_API_KEY=${SPRW_POSTIZ_X_API_KEY}
-      {%- endif %}
-      {%- if SPRW_POSTIZ_X_API_SECRET %}
-      - X_API_SECRET=${SPRW_POSTIZ_X_API_SECRET}
-      {%- endif %}
-      {%- if SPRW_POSTIZ_LINKEDIN_CLIENT_ID %}
-      - LINKEDIN_CLIENT_ID=${SPRW_POSTIZ_LINKEDIN_CLIENT_ID}
-      {%- endif %}
-      {%- if SPRW_POSTIZ_LINKEDIN_CLIENT_SECRET %}
-      - LINKEDIN_CLIENT_SECRET=${SPRW_POSTIZ_LINKEDIN_CLIENT_SECRET}
-      {%- endif %}
-      {%- if SPRW_POSTIZ_FACEBOOK_APP_ID %}
-      - FACEBOOK_APP_ID=${SPRW_POSTIZ_FACEBOOK_APP_ID}
-      {%- endif %}
-      {%- if SPRW_POSTIZ_FACEBOOK_APP_SECRET %}
-      - FACEBOOK_APP_SECRET=${SPRW_POSTIZ_FACEBOOK_APP_SECRET}
-      {%- endif %}
-      {%- if SPRW_POSTIZ_THREADS_APP_ID %}
-      - THREADS_APP_ID=${SPRW_POSTIZ_THREADS_APP_ID}
-      {%- endif %}
-      {%- if SPRW_POSTIZ_THREADS_APP_SECRET %}
-      - THREADS_APP_SECRET=${SPRW_POSTIZ_THREADS_APP_SECRET}
-      {%- endif %}
-      {%- if SPRW_POSTIZ_YOUTUBE_CLIENT_ID %}
-      - YOUTUBE_CLIENT_ID=${SPRW_POSTIZ_YOUTUBE_CLIENT_ID}
-      {%- endif %}
-      {%- if SPRW_POSTIZ_YOUTUBE_CLIENT_SECRET %}
-      - YOUTUBE_CLIENT_SECRET=${SPRW_POSTIZ_YOUTUBE_CLIENT_SECRET}
-      {%- endif %}
-      - MASTODON_URL=${SPRW_POSTIZ_MASTODON_URL:-https://mastodon.social}
-      {%- if SPRW_POSTIZ_MASTODON_CLIENT_ID %}
-      - MASTODON_CLIENT_ID=${SPRW_POSTIZ_MASTODON_CLIENT_ID}
-      {%- endif %}
-      {%- if SPRW_POSTIZ_MASTODON_CLIENT_SECRET %}
-      - MASTODON_CLIENT_SECRET=${SPRW_POSTIZ_MASTODON_CLIENT_SECRET}
-      {%- endif %}
+      # Social networks: keys and HIDDEN_PROVIDERS come from secrets/providers.env
+      # (env_file above), written by pre-deploy.sh from the persistent config.
+      # Switch networks with SPRW_POSTIZ_PROVIDER_<NAME>=true|false.
       {%- if SPRW_POSTIZ_OIDC == "true" %}
       - POSTIZ_GENERIC_OAUTH=true
       - NEXT_PUBLIC_POSTIZ_OAUTH_DISPLAY_NAME=${SPRW_POSTIZ_OIDC_DISPLAY_NAME}
