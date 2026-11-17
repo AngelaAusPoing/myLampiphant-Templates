@@ -1,0 +1,18 @@
+# === App variables (pollaris) ===
+# This file is sent to Komodo as the stack .env. No passwords, keys or tokens
+# belong here: DB password, APP_SECRET and SMTP password live only in the
+# persistent config and in <data_dir>/secrets/*.env (written by install.sh).
+APPDOMAIN=!!APPDOMAIN!!
+CUSTOMER=!!CUSTOMER!!
+STACKNAME=!!STACKNAME!!
+
+# === pollaris (non-secret) ===
+POLLARIS_VERSION=!!POLLARIS_VERSION!!
+DB_IMAGE=!!DB_IMAGE!!
+POLLARIS_MEM_LIMIT=!!POLLARIS_MEM_LIMIT!!
+WORKER_MEM_LIMIT=!!WORKER_MEM_LIMIT!!
+DB_MEM_LIMIT=!!DB_MEM_LIMIT!!
+TIMEZONE=!!TIMEZONE!!
+AUTH_PROTECT=!!AUTH_PROTECT!!
+MAIL_ENABLED=!!MAIL_ENABLED!!
+REQUIRE_EMAILS=!!REQUIRE_EMAILS!!

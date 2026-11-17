@@ -1,0 +1,184 @@
+#!/bin/bash
+# Default variables for the app "pollaris" (date and classic polls; the software
+# behind the current Framadate, successor of the archived OpenSondage/Framadate)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (one stack per customer):
+#   app.sh pollaris add <customer>
+#   app.sh pollaris add <customer> --var APPDOMAIN=umfrage.example.com
+#   app.sh pollaris add <customer> --var AUTH_PROTECT=admin
+#
+# The stack is named pollaris_c_<customer>.
+#
+# The image is built by Komodo from the Dockerfile that install.sh copies into
+# the compose dir (no official production image upstream).
+#
+# Options (Jinja2 / Docusaurus buttons):
+#   VOLUME_MODE:  bind (default) | named_bind | managed   (PostgreSQL data)
+#   AUTH_PROTECT: none (default) | admin | all            (Traefik ForwardAuth via host Authelia)
+#   MAIL_ENABLED: false (default) | true                  (SMTP for admin links and notifications)
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='pollaris'
+SPRW__APP_PREFIX='POLLARIS'
+
+# Global (customer/domain-specific values are !!PLACEHOLDER!!, filled by app.sh)
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. umfrage.example.com
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Homer dashboard tile (optional; app.sh default is HOMER_LINK=true)
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Umfragen'
+SPRW__HOMER_ICON='fas fa-poll'
+SPRW__HOMER_GROUP='Apps'
+
+# Access protection via the host Authelia stack (middleware authelia@docker).
+# Pollaris has no LDAP/OIDC login of its own (only local admin accounts).
+#   none  = public (participants need no account)
+#   admin = only /admin and /login need an Authelia (LDAP) login
+#   all   = the whole site needs an Authelia (LDAP) login
+SPRW_POLLARIS_AUTH_PROTECT='!!AUTH_PROTECT!!'
+SPRW_POLLARIS_IPALLOW_RANGES='!!IPALLOW_RANGES!!'   # used when EXTERNAL_ACCESS=false
+
+# Build (Komodo builds the image; pin the upstream release tag)
+SPRW_POLLARIS_VERSION='!!POLLARIS_VERSION!!'        # git tag on framagit.org/pollaris/pollaris
+SPRW_POLLARIS_FRANKENPHP_IMAGE='!!FRANKENPHP_IMAGE!!'
+SPRW_POLLARIS_COMPOSER_IMAGE='!!COMPOSER_IMAGE!!'
+SPRW_POLLARIS_DB_IMAGE='!!DB_IMAGE!!'               # official PostgreSQL, ARM64 verified
+SPRW_POLLARIS_MEM_LIMIT='!!POLLARIS_MEM_LIMIT!!'
+SPRW_POLLARIS_WORKER_MEM_LIMIT='!!WORKER_MEM_LIMIT!!'
+SPRW_POLLARIS_DB_MEM_LIMIT='!!DB_MEM_LIMIT!!'
+SPRW_POLLARIS_TIMEZONE='!!TIMEZONE!!'
+
+# Application settings
+SPRW_POLLARIS_APP_NAME='!!POLLARIS_APP_NAME!!'      # platform name shown in the UI
+SPRW_POLLARIS_REQUIRE_EMAILS='!!REQUIRE_EMAILS!!'   # true = poll authors must enter an e-mail
+SPRW_POLLARIS_POLL_EXPIRES_COMPLETED='!!POLL_EXPIRES_COMPLETED!!'   # e.g. 6months (PHP relative date without spaces)
+
+# Database (password generated once, never sent to Komodo)
+SPRW_POLLARIS_DB_NAME='!!DB_NAME!!'
+SPRW_POLLARIS_DB_USER='!!DB_USER!!'
+SPRW_POLLARIS_DB_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_POLLARIS_APP_SECRET="!!NEW_KEY!!"
+
+# Mail (Symfony Mailer via SMTP). Set MAIL_HOST/MAIL_USER/MAIL_PASSWORD to an
+# existing mailbox, then MAIL_ENABLED=true. No credentials are invented here.
+SPRW_POLLARIS_MAIL_ENABLED='!!MAIL_ENABLED!!'
+SPRW_POLLARIS_MAIL_HOST='!!MAIL_HOST!!'
+SPRW_POLLARIS_MAIL_PORT='!!MAIL_PORT!!'
+SPRW_POLLARIS_MAIL_USER='!!MAIL_USER!!'
+SPRW_POLLARIS_MAIL_PASSWORD='!!MAIL_PASSWORD!!'
+SPRW_POLLARIS_MAIL_FROM='!!MAIL_FROM!!'
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, change the values above instead (defaults for empty values).
+if [ -z "$SPRW__APPDOMAIN" ] || [[ "$SPRW__APPDOMAIN" == *'!!'* ]]; then
+	SPRW__APPDOMAIN=umfrage.${SPRW__DOMAIN:-example.com}
+fi
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW__HOMER_LINK" ] || [[ "$SPRW__HOMER_LINK" == *'!!'* ]]; then
+	SPRW__HOMER_LINK=true
+fi
+if [ -z "$SPRW_POLLARIS_AUTH_PROTECT" ] || [[ "$SPRW_POLLARIS_AUTH_PROTECT" == *'!!'* ]]; then
+	SPRW_POLLARIS_AUTH_PROTECT=none
+fi
+if [ -z "$SPRW_POLLARIS_IPALLOW_RANGES" ] || [[ "$SPRW_POLLARIS_IPALLOW_RANGES" == *'!!'* ]]; then
+	SPRW_POLLARIS_IPALLOW_RANGES=10.8.0.0/24,10.50.0.0/16,192.168.0.0/16,172.16.0.0/12,127.0.0.1/32
+fi
+if [ -z "$SPRW_POLLARIS_VERSION" ] || [[ "$SPRW_POLLARIS_VERSION" == *'!!'* ]]; then
+	SPRW_POLLARIS_VERSION=1.2.3
+fi
+if [ -z "$SPRW_POLLARIS_FRANKENPHP_IMAGE" ] || [[ "$SPRW_POLLARIS_FRANKENPHP_IMAGE" == *'!!'* ]]; then
+	SPRW_POLLARIS_FRANKENPHP_IMAGE=dunglas/frankenphp:1.13.5-php8.4.27-alpine
+fi
+if [ -z "$SPRW_POLLARIS_COMPOSER_IMAGE" ] || [[ "$SPRW_POLLARIS_COMPOSER_IMAGE" == *'!!'* ]]; then
+	SPRW_POLLARIS_COMPOSER_IMAGE=composer:2.11.2
+fi
+if [ -z "$SPRW_POLLARIS_DB_IMAGE" ] || [[ "$SPRW_POLLARIS_DB_IMAGE" == *'!!'* ]]; then
+	SPRW_POLLARIS_DB_IMAGE=postgres:18.7-alpine
+fi
+if [ -z "$SPRW_POLLARIS_MEM_LIMIT" ] || [[ "$SPRW_POLLARIS_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_POLLARIS_MEM_LIMIT=192m
+fi
+if [ -z "$SPRW_POLLARIS_WORKER_MEM_LIMIT" ] || [[ "$SPRW_POLLARIS_WORKER_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_POLLARIS_WORKER_MEM_LIMIT=128m
+fi
+if [ -z "$SPRW_POLLARIS_DB_MEM_LIMIT" ] || [[ "$SPRW_POLLARIS_DB_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_POLLARIS_DB_MEM_LIMIT=192m
+fi
+if [ -z "$SPRW_POLLARIS_TIMEZONE" ] || [[ "$SPRW_POLLARIS_TIMEZONE" == *'!!'* ]]; then
+	SPRW_POLLARIS_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_POLLARIS_APP_NAME" ] || [[ "$SPRW_POLLARIS_APP_NAME" == *'!!'* ]]; then
+	SPRW_POLLARIS_APP_NAME=Pollaris
+fi
+if [ -z "$SPRW_POLLARIS_REQUIRE_EMAILS" ] || [[ "$SPRW_POLLARIS_REQUIRE_EMAILS" == *'!!'* ]]; then
+	SPRW_POLLARIS_REQUIRE_EMAILS=false
+fi
+if [ -z "$SPRW_POLLARIS_POLL_EXPIRES_COMPLETED" ] || [[ "$SPRW_POLLARIS_POLL_EXPIRES_COMPLETED" == *'!!'* ]]; then
+	SPRW_POLLARIS_POLL_EXPIRES_COMPLETED=6months
+fi
+if [ -z "$SPRW_POLLARIS_DB_NAME" ] || [[ "$SPRW_POLLARIS_DB_NAME" == *'!!'* ]]; then
+	SPRW_POLLARIS_DB_NAME=pollaris
+fi
+if [ -z "$SPRW_POLLARIS_DB_USER" ] || [[ "$SPRW_POLLARIS_DB_USER" == *'!!'* ]]; then
+	SPRW_POLLARIS_DB_USER=pollaris
+fi
+if [ -z "$SPRW_POLLARIS_MAIL_ENABLED" ] || [[ "$SPRW_POLLARIS_MAIL_ENABLED" == *'!!'* ]]; then
+	SPRW_POLLARIS_MAIL_ENABLED=false
+fi
+if [ -z "$SPRW_POLLARIS_MAIL_PORT" ] || [[ "$SPRW_POLLARIS_MAIL_PORT" == *'!!'* ]]; then
+	SPRW_POLLARIS_MAIL_PORT=587
+fi
+if [ -z "$SPRW_POLLARIS_MAIL_FROM" ] || [[ "$SPRW_POLLARIS_MAIL_FROM" == *'!!'* ]]; then
+	SPRW_POLLARIS_MAIL_FROM="noreply@${SPRW__APPDOMAIN}"
+fi
+
+# ------------------------------------------------------------------------------------------------
+# Bridge for app.sh: placeholders are resolved by their bare name.
+APPDOMAIN="$SPRW__APPDOMAIN"
+VOLUME_MODE="$SPRW__VOLUME_MODE"
+HTTP_REDIRECT="$SPRW__HTTP_REDIRECT"
+LETSENCRYPT_METHOD="$SPRW__LETSENCRYPT_METHOD"
+EXTERNAL_ACCESS="$SPRW__EXTERNAL_ACCESS"
+HOMER_LINK="$SPRW__HOMER_LINK"
+HOMER_NAME="$SPRW__HOMER_NAME"
+HOMER_ICON="$SPRW__HOMER_ICON"
+HOMER_GROUP="$SPRW__HOMER_GROUP"
+AUTH_PROTECT="$SPRW_POLLARIS_AUTH_PROTECT"
+IPALLOW_RANGES="$SPRW_POLLARIS_IPALLOW_RANGES"
+POLLARIS_VERSION="$SPRW_POLLARIS_VERSION"
+FRANKENPHP_IMAGE="$SPRW_POLLARIS_FRANKENPHP_IMAGE"
+COMPOSER_IMAGE="$SPRW_POLLARIS_COMPOSER_IMAGE"
+DB_IMAGE="$SPRW_POLLARIS_DB_IMAGE"
+POLLARIS_MEM_LIMIT="$SPRW_POLLARIS_MEM_LIMIT"
+WORKER_MEM_LIMIT="$SPRW_POLLARIS_WORKER_MEM_LIMIT"
+DB_MEM_LIMIT="$SPRW_POLLARIS_DB_MEM_LIMIT"
+TIMEZONE="$SPRW_POLLARIS_TIMEZONE"
+POLLARIS_APP_NAME="$SPRW_POLLARIS_APP_NAME"
+REQUIRE_EMAILS="$SPRW_POLLARIS_REQUIRE_EMAILS"
+POLL_EXPIRES_COMPLETED="$SPRW_POLLARIS_POLL_EXPIRES_COMPLETED"
+DB_NAME="$SPRW_POLLARIS_DB_NAME"
+DB_USER="$SPRW_POLLARIS_DB_USER"
+MAIL_ENABLED="$SPRW_POLLARIS_MAIL_ENABLED"
+MAIL_HOST="$SPRW_POLLARIS_MAIL_HOST"
+MAIL_PORT="$SPRW_POLLARIS_MAIL_PORT"
+MAIL_USER="$SPRW_POLLARIS_MAIL_USER"
+MAIL_FROM="$SPRW_POLLARIS_MAIL_FROM"
