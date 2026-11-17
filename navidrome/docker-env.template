@@ -1,0 +1,19 @@
+# === Stack variables (SPRW__*) ===
+# This file is sent to Komodo as the stack .env. No passwords, keys or tokens belong here.
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__APPDOMAIN=!!APPDOMAIN!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# === Image and limits (defaults; override in persistent config) ===
+SPRW_NAVIDROME_IMAGE=deluan/navidrome:0.64.2
+SPRW_NAVIDROME_MEM_LIMIT=256m
+SPRW_NAVIDROME_PUID=1000
+SPRW_NAVIDROME_PGID=1000
+SPRW_NAVIDROME_TIMEZONE=Europe/Berlin
+SPRW_NAVIDROME_SCAN_SCHEDULE=1h
+SPRW_NAVIDROME_LOG_LEVEL=info
+
+# === Music library and access ===
+SPRW_NAVIDROME_MUSIC_DIR=!!MUSIC_DIR!!
+SPRW_NAVIDROME_TRUSTED_SOURCES=!!TRUSTED_SOURCES!!
+SPRW_NAVIDROME_INTERNAL_SOURCERANGE=!!INTERNAL_SOURCERANGE!!

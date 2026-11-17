@@ -1,0 +1,106 @@
+#!/bin/bash
+# Default variables for the app "navidrome" (Navidrome music server, Subsonic API)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (one stack per customer; Navidrome has its own multi-user accounts):
+#   app.sh navidrome add <customer>
+#   app.sh navidrome add <customer> --var APPDOMAIN=music.example.com --var MUSIC_DIR=/srv/music
+#
+# The stack is named navidrome_c_<customer>.
+# The first account created in the web UI becomes the admin.
+#
+# Options (Jinja2 / Docusaurus buttons):
+#   SPRW_NAVIDROME_AUTH: plain (default) | proxy
+#     proxy = Authelia forwardAuth in front of the web UI (requires the host app
+#             "authelia"); the Subsonic API /rest is excluded so apps keep working.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='navidrome'
+SPRW__APP_PREFIX='NAVIDROME'
+
+# Global environment variables that are used in the app's templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. music.example.com
+
+# Global Jinja2 variables that are used in the app's templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Homer dashboard tile (optional; app.sh default is HOMER_LINK=true)
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Navidrome'
+SPRW__HOMER_ICON='fas fa-music'
+SPRW__HOMER_GROUP='Media'
+
+# App-specific variables (SPRW_NAVIDROME_*)
+SPRW_NAVIDROME_IMAGE='!!IMAGE!!'                    # deluan/navidrome, ARM64-verified
+SPRW_NAVIDROME_MEM_LIMIT='!!MEM_LIMIT!!'            # compose mem_limit (e.g. 256m)
+SPRW_NAVIDROME_PUID='!!PUID!!'                      # uid that owns the data directory
+SPRW_NAVIDROME_PGID='!!PGID!!'
+SPRW_NAVIDROME_TIMEZONE='!!TIMEZONE!!'
+SPRW_NAVIDROME_SCAN_SCHEDULE='!!SCAN_SCHEDULE!!'    # library rescan interval (e.g. 1h) or cron expression
+SPRW_NAVIDROME_LOG_LEVEL='!!LOG_LEVEL!!'            # error, warn, info, debug
+SPRW_NAVIDROME_MUSIC_DIR='!!MUSIC_DIR!!'            # host folder with the music files (mounted read-only)
+SPRW_NAVIDROME_AUTH='!!AUTH!!'                      # plain | proxy
+SPRW_NAVIDROME_TRUSTED_SOURCES='!!TRUSTED_SOURCES!!'  # proxy mode: IP/CIDR of Traefik on proxy-shared
+SPRW_NAVIDROME_INTERNAL_SOURCERANGE='!!INTERNAL_SOURCERANGE!!'  # EXTERNAL_ACCESS=false: allowed client networks
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__APPDOMAIN" ] || [[ "$SPRW__APPDOMAIN" == *'!!'* ]]; then
+	SPRW__APPDOMAIN=navidrome.${SPRW__DOMAIN:-example.com}
+fi
+
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW__HOMER_LINK" ] || [[ "$SPRW__HOMER_LINK" == *'!!'* ]]; then
+	SPRW__HOMER_LINK=true
+fi
+
+if [ -z "$SPRW_NAVIDROME_IMAGE" ] || [[ "$SPRW_NAVIDROME_IMAGE" == *'!!'* ]]; then
+	SPRW_NAVIDROME_IMAGE=deluan/navidrome:0.64.2
+fi
+if [ -z "$SPRW_NAVIDROME_MEM_LIMIT" ] || [[ "$SPRW_NAVIDROME_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_NAVIDROME_MEM_LIMIT=256m
+fi
+if [ -z "$SPRW_NAVIDROME_PUID" ] || [[ "$SPRW_NAVIDROME_PUID" == *'!!'* ]]; then
+	SPRW_NAVIDROME_PUID=1000
+fi
+if [ -z "$SPRW_NAVIDROME_PGID" ] || [[ "$SPRW_NAVIDROME_PGID" == *'!!'* ]]; then
+	SPRW_NAVIDROME_PGID=1000
+fi
+if [ -z "$SPRW_NAVIDROME_TIMEZONE" ] || [[ "$SPRW_NAVIDROME_TIMEZONE" == *'!!'* ]]; then
+	SPRW_NAVIDROME_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_NAVIDROME_SCAN_SCHEDULE" ] || [[ "$SPRW_NAVIDROME_SCAN_SCHEDULE" == *'!!'* ]]; then
+	SPRW_NAVIDROME_SCAN_SCHEDULE=1h
+fi
+if [ -z "$SPRW_NAVIDROME_LOG_LEVEL" ] || [[ "$SPRW_NAVIDROME_LOG_LEVEL" == *'!!'* ]]; then
+	SPRW_NAVIDROME_LOG_LEVEL=info
+fi
+if [ -z "$SPRW_NAVIDROME_MUSIC_DIR" ] || [[ "$SPRW_NAVIDROME_MUSIC_DIR" == *'!!'* ]]; then
+	SPRW_NAVIDROME_MUSIC_DIR=!!DATA_DIR!!/music
+fi
+if [ -z "$SPRW_NAVIDROME_AUTH" ] || [[ "$SPRW_NAVIDROME_AUTH" == *'!!'* ]]; then
+	SPRW_NAVIDROME_AUTH=plain
+fi
+if [ -z "$SPRW_NAVIDROME_TRUSTED_SOURCES" ] || [[ "$SPRW_NAVIDROME_TRUSTED_SOURCES" == *'!!'* ]]; then
+	SPRW_NAVIDROME_TRUSTED_SOURCES=172.16.0.0/12
+fi
+if [ -z "$SPRW_NAVIDROME_INTERNAL_SOURCERANGE" ] || [[ "$SPRW_NAVIDROME_INTERNAL_SOURCERANGE" == *'!!'* ]]; then
+	SPRW_NAVIDROME_INTERNAL_SOURCERANGE=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.1/32
+fi

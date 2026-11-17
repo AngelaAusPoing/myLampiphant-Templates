@@ -1,0 +1,37 @@
+#!/bin/bash
+# Prepare Navidrome data directories and networks. No secrets are set or printed here.
+set -euo pipefail
+
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__APPDOMAIN="!!APPDOMAIN!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
+MUSIC_DIR="!!MUSIC_DIR!!"
+PUID="!!PUID!!"
+PGID="!!PGID!!"
+
+echo "Installing Navidrome for ${SPRW__CUSTOMER} (${SPRW__APPDOMAIN})..."
+
+mkdir -p "$SPRW__COMPOSE_DIR"
+mkdir -p "$SPRW__DATA_DIR/data"
+# The music folder is only created if it does not exist; existing files are not touched.
+if [ ! -d "$MUSIC_DIR" ]; then
+    mkdir -p "$MUSIC_DIR"
+    chown "${PUID}:${PGID}" "$MUSIC_DIR"
+fi
+
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_shared_networks
+ensure_customer_network "$SPRW__CUSTOMER"
+
+# Navidrome runs as PUID:PGID (compose "user:").
+chown -R "${PUID}:${PGID}" "$SPRW__DATA_DIR/data"
+
+echo "Installation finished."
+echo "Navidrome URL: https://${SPRW__APPDOMAIN}"
+echo "Music folder (read-only in the container): ${MUSIC_DIR}"
+echo "After the first start, create the admin account at https://${SPRW__APPDOMAIN}"
+{%- if SPRW_NAVIDROME_AUTH == "proxy" %}
+echo "Auth=proxy: requires the host app authelia (middleware authelia@docker). Users are matched by the Remote-User header."
+{%- endif %}
