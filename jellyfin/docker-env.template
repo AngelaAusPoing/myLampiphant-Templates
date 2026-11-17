@@ -1,0 +1,17 @@
+# === Stack variables (SPRW__*) ===
+# This file is sent to Komodo as the stack .env. No passwords, keys or tokens belong here.
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__APPDOMAIN=!!APPDOMAIN!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# === Image and limits (defaults; override in persistent config) ===
+SPRW_JELLYFIN_IMAGE=jellyfin/jellyfin:12.4
+SPRW_JELLYFIN_MEM_LIMIT=1024m
+SPRW_JELLYFIN_CPUS=1.5
+SPRW_JELLYFIN_PUID=1000
+SPRW_JELLYFIN_PGID=1000
+SPRW_JELLYFIN_TIMEZONE=Europe/Berlin
+
+# === Media library and access ===
+SPRW_JELLYFIN_MEDIA_DIR=!!MEDIA_DIR!!
+SPRW_JELLYFIN_INTERNAL_SOURCERANGE=!!INTERNAL_SOURCERANGE!!

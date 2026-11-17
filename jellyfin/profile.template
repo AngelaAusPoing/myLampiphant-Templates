@@ -1,0 +1,128 @@
+#!/bin/bash
+# Default variables for the app "jellyfin" (Jellyfin media server)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (one stack per customer; Jellyfin has its own multi-user accounts):
+#   app.sh jellyfin add <customer>
+#   app.sh jellyfin add <customer> --var APPDOMAIN=media.example.com --var MEDIA_DIR=/srv/media
+#
+# The stack is named jellyfin_c_<customer>.
+# The admin account is created in the setup wizard on the first visit.
+#
+# Options (Jinja2 / Docusaurus buttons):
+#   SPRW_JELLYFIN_AUTH: plain (default) | ldap
+#     ldap = attach ldap-shared so the "LDAP Authentication" plugin can reach the
+#            host OpenLDAP. Install and configure the plugin in the Jellyfin UI with
+#            the LDAP_* values below (bind password: host read-only account).
+#   OIDC/SSO is possible later with the community "SSO Authentication" plugin.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='jellyfin'
+SPRW__APP_PREFIX='JELLYFIN'
+
+# Global environment variables that are used in the app's templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. media.example.com
+
+# Global Jinja2 variables that are used in the app's templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Homer dashboard tile (optional; app.sh default is HOMER_LINK=true)
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Jellyfin'
+SPRW__HOMER_ICON='fas fa-film'
+SPRW__HOMER_GROUP='Media'
+
+# App-specific variables (SPRW_JELLYFIN_*)
+SPRW_JELLYFIN_IMAGE='!!IMAGE!!'                     # jellyfin/jellyfin, ARM64-verified
+SPRW_JELLYFIN_MEM_LIMIT='!!MEM_LIMIT!!'             # compose mem_limit (transcoding needs more)
+SPRW_JELLYFIN_CPUS='!!CPUS!!'                       # compose cpus cap, keeps transcoding from starving other apps
+SPRW_JELLYFIN_PUID='!!PUID!!'                       # uid that owns config/cache
+SPRW_JELLYFIN_PGID='!!PGID!!'
+SPRW_JELLYFIN_TIMEZONE='!!TIMEZONE!!'
+SPRW_JELLYFIN_MEDIA_DIR='!!MEDIA_DIR!!'             # host folder with films/series/music (mounted read-only)
+SPRW_JELLYFIN_INTERNAL_SOURCERANGE='!!INTERNAL_SOURCERANGE!!'  # EXTERNAL_ACCESS=false: allowed client networks
+SPRW_JELLYFIN_AUTH='!!AUTH!!'                       # plain | ldap
+
+# LDAP values for the plugin (used with AUTH=ldap). The bind password is NOT stored here.
+SPRW_JELLYFIN_LDAP_SERVER='!!LDAP_SERVER!!'         # hostname of the host OpenLDAP on ldap-shared
+SPRW_JELLYFIN_LDAP_SUFFIX='!!LDAP_SUFFIX!!'         # directory suffix (read from the host LDAP config if empty)
+SPRW_JELLYFIN_LDAP_BIND_DN='!!LDAP_BIND_DN!!'       # read-only bind DN
+SPRW_JELLYFIN_LDAP_BASE_DN='!!LDAP_BASE_DN!!'       # users of this customer: ou=people,o=<customer>,<suffix>
+SPRW_JELLYFIN_LDAP_ADMIN_GROUP='!!LDAP_ADMIN_GROUP!!'  # LDAP group whose members become Jellyfin admins
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__APPDOMAIN" ] || [[ "$SPRW__APPDOMAIN" == *'!!'* ]]; then
+	SPRW__APPDOMAIN=jellyfin.${SPRW__DOMAIN:-example.com}
+fi
+
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW__HOMER_LINK" ] || [[ "$SPRW__HOMER_LINK" == *'!!'* ]]; then
+	SPRW__HOMER_LINK=true
+fi
+
+if [ -z "$SPRW_JELLYFIN_IMAGE" ] || [[ "$SPRW_JELLYFIN_IMAGE" == *'!!'* ]]; then
+	SPRW_JELLYFIN_IMAGE=jellyfin/jellyfin:12.4
+fi
+if [ -z "$SPRW_JELLYFIN_MEM_LIMIT" ] || [[ "$SPRW_JELLYFIN_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_JELLYFIN_MEM_LIMIT=1024m
+fi
+if [ -z "$SPRW_JELLYFIN_CPUS" ] || [[ "$SPRW_JELLYFIN_CPUS" == *'!!'* ]]; then
+	SPRW_JELLYFIN_CPUS=1.5
+fi
+if [ -z "$SPRW_JELLYFIN_PUID" ] || [[ "$SPRW_JELLYFIN_PUID" == *'!!'* ]]; then
+	SPRW_JELLYFIN_PUID=1000
+fi
+if [ -z "$SPRW_JELLYFIN_PGID" ] || [[ "$SPRW_JELLYFIN_PGID" == *'!!'* ]]; then
+	SPRW_JELLYFIN_PGID=1000
+fi
+if [ -z "$SPRW_JELLYFIN_TIMEZONE" ] || [[ "$SPRW_JELLYFIN_TIMEZONE" == *'!!'* ]]; then
+	SPRW_JELLYFIN_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_JELLYFIN_MEDIA_DIR" ] || [[ "$SPRW_JELLYFIN_MEDIA_DIR" == *'!!'* ]]; then
+	SPRW_JELLYFIN_MEDIA_DIR=!!DATA_DIR!!/media
+fi
+if [ -z "$SPRW_JELLYFIN_INTERNAL_SOURCERANGE" ] || [[ "$SPRW_JELLYFIN_INTERNAL_SOURCERANGE" == *'!!'* ]]; then
+	SPRW_JELLYFIN_INTERNAL_SOURCERANGE=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.1/32
+fi
+if [ -z "$SPRW_JELLYFIN_AUTH" ] || [[ "$SPRW_JELLYFIN_AUTH" == *'!!'* ]]; then
+	SPRW_JELLYFIN_AUTH=plain
+fi
+if [ -z "$SPRW_JELLYFIN_LDAP_SERVER" ] || [[ "$SPRW_JELLYFIN_LDAP_SERVER" == *'!!'* ]]; then
+	SPRW_JELLYFIN_LDAP_SERVER=ldap
+fi
+# Directory suffix: taken from the host LDAP app config if present (no secrets are read).
+# Helper (unbraced, not SPRW_*): app.sh expands ${VAR} / $SPRW_* in this file when it
+# is created, so derived defaults must not reference other SPRW_ variables.
+_ldap_sfx=$(sed -n "s/^SPRW_LDAP_BASE_DN=['\"]\{0,1\}\([^'\" #]*\).*/\1/p" /opt/docker-data/_host_/_config_/ldap.env 2>/dev/null | head -1)
+[ -n "$_ldap_sfx" ] || _ldap_sfx='dc=example,dc=com'
+if [ -z "$SPRW_JELLYFIN_LDAP_SUFFIX" ] || [[ "$SPRW_JELLYFIN_LDAP_SUFFIX" == *'!!'* ]]; then
+	SPRW_JELLYFIN_LDAP_SUFFIX=$_ldap_sfx
+fi
+if [ -z "$SPRW_JELLYFIN_LDAP_BIND_DN" ] || [[ "$SPRW_JELLYFIN_LDAP_BIND_DN" == *'!!'* ]]; then
+	SPRW_JELLYFIN_LDAP_BIND_DN=cn=readonly,ou=system,$_ldap_sfx
+fi
+if [ -z "$SPRW_JELLYFIN_LDAP_BASE_DN" ] || [[ "$SPRW_JELLYFIN_LDAP_BASE_DN" == *'!!'* ]]; then
+	SPRW_JELLYFIN_LDAP_BASE_DN=ou=people,o=!!CUSTOMER!!,$_ldap_sfx
+fi
+unset _ldap_sfx
+if [ -z "$SPRW_JELLYFIN_LDAP_ADMIN_GROUP" ] || [[ "$SPRW_JELLYFIN_LDAP_ADMIN_GROUP" == *'!!'* ]]; then
+	SPRW_JELLYFIN_LDAP_ADMIN_GROUP=jellyfin-admin
+fi

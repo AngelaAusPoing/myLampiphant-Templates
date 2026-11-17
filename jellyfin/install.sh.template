@@ -1,0 +1,40 @@
+#!/bin/bash
+# Prepare Jellyfin data directories and networks. No secrets are set or printed here.
+set -euo pipefail
+
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__APPDOMAIN="!!APPDOMAIN!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
+MEDIA_DIR="!!MEDIA_DIR!!"
+PUID="!!PUID!!"
+PGID="!!PGID!!"
+
+echo "Installing Jellyfin for ${SPRW__CUSTOMER} (${SPRW__APPDOMAIN})..."
+
+mkdir -p "$SPRW__COMPOSE_DIR"
+mkdir -p "$SPRW__DATA_DIR/config" "$SPRW__DATA_DIR/cache"
+# The media folder is only created if it does not exist; existing files are not touched.
+if [ ! -d "$MEDIA_DIR" ]; then
+    mkdir -p "$MEDIA_DIR"
+    chown "${PUID}:${PGID}" "$MEDIA_DIR"
+fi
+
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_shared_networks
+ensure_customer_network "$SPRW__CUSTOMER"
+
+# Jellyfin runs as PUID:PGID (compose "user:").
+chown -R "${PUID}:${PGID}" "$SPRW__DATA_DIR/config" "$SPRW__DATA_DIR/cache"
+
+echo "Installation finished."
+echo "Jellyfin URL: https://${SPRW__APPDOMAIN}"
+echo "Media folder (read-only in the container, path /media): ${MEDIA_DIR}"
+echo "After the first start, finish the setup wizard at https://${SPRW__APPDOMAIN} (creates the admin account)."
+{%- if SPRW_JELLYFIN_AUTH == "ldap" %}
+echo "LDAP: install the plugin 'LDAP Authentication' (Dashboard > Plugins > Catalog) and set:"
+echo "  server !!LDAP_SERVER!!, port 389, base DN !!LDAP_BASE_DN!!, bind user !!LDAP_BIND_DN!!"
+echo "  admin filter: memberOf=cn=!!LDAP_ADMIN_GROUP!!,ou=groups,o=${SPRW__CUSTOMER},!!LDAP_SUFFIX!!"
+echo "  The bind password is the host read-only LDAP account (not printed here)."
+{%- endif %}
