@@ -1,0 +1,9 @@
+# === Stack variables (SPRW__*) ===
+# This file is sent to Komodo as the stack .env.
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__APPDOMAIN=!!APPDOMAIN!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# === Image and memory limit (defaults; override in persistent config) ===
+SPRW_NGINX_IMAGE=nginx:alpine
+SPRW_NGINX_MEM_LIMIT=64m

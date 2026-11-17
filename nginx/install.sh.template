@@ -1,0 +1,74 @@
+#!/bin/bash
+# Prepare the nginx data directory. Existing files are never overwritten.
+set -euo pipefail
+
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__APPDOMAIN="!!APPDOMAIN!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
+
+echo "Installing nginx for ${SPRW__CUSTOMER} (${SPRW__APPDOMAIN})..."
+
+mkdir -p "$SPRW__COMPOSE_DIR"
+mkdir -p "$SPRW__DATA_DIR/html"
+
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_mylampiphant_networks "$SPRW__CUSTOMER"
+
+CONF="$SPRW__DATA_DIR/nginx.conf"
+if [ ! -f "$CONF" ]; then
+	cat > "$CONF" <<'NGINXEOF'
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    sendfile on;
+    keepalive_timeout 65;
+    server_tokens off;
+    gzip on;
+
+    # Traefik terminates TLS and forwards the real client IP.
+    set_real_ip_from 172.16.0.0/12;
+    set_real_ip_from 10.0.0.0/8;
+    real_ip_header X-Forwarded-For;
+
+    server {
+        listen 80;
+        server_name _;
+        root /usr/share/nginx/html;
+        index index.html index.htm;
+
+        location / {
+            try_files $uri $uri/ =404;
+        }
+    }
+}
+NGINXEOF
+	echo "Wrote default nginx.conf: ${CONF}"
+else
+	echo "Keeping existing nginx.conf: ${CONF}"
+fi
+
+INDEX="$SPRW__DATA_DIR/html/index.html"
+if [ -z "$(ls -A "$SPRW__DATA_DIR/html" 2>/dev/null)" ]; then
+	cat > "$INDEX" <<HTMLEOF
+<!doctype html>
+<html lang="de">
+<head><meta charset="utf-8"><title>${SPRW__APPDOMAIN}</title></head>
+<body><h1>${SPRW__APPDOMAIN}</h1><p>Diese Seite wird bald befüllt.</p></body>
+</html>
+HTMLEOF
+	echo "Wrote placeholder page: ${INDEX}"
+fi
+
+echo "Installation finished."
+echo "URL: https://${SPRW__APPDOMAIN}"
+echo "Website files: ${SPRW__DATA_DIR}/html"

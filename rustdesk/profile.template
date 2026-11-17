@@ -1,0 +1,79 @@
+#!/bin/bash
+# Default variables for the app "rustdesk" (RustDesk server OSS: hbbs + hbbr)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (one stack per customer):
+#   app.sh rustdesk add <customer>
+#   app.sh rustdesk add lapha_de --var APPDOMAIN=rustdesk.lapha.de
+#
+# The stack is named rustdesk_c_<customer>, e.g. rustdesk_c_lapha_de.
+# APPDOMAIN needs a DNS A record to this host; there is no web UI and no
+# Traefik router. Open NAT_PORT/tcp, ID_PORT/tcp+udp and RELAY_PORT/tcp in the
+# firewall. A second customer on the same host needs other ports.
+#
+# Options (Jinja2 / Docusaurus buttons):
+#   RUSTDESK_ENCRYPTED_ONLY: true (default) | false   only clients that know the key may connect
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='rustdesk'
+SPRW__APP_PREFIX='RUSTDESK'
+
+# Global environment variables that are used in the app's templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. rustdesk.example.com (ID/relay server name)
+
+# Global Jinja2 variables that are used in the app's templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+
+# No web UI, so no Homer tile by default.
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='RustDesk'
+SPRW__HOMER_ICON='fas fa-desktop'
+SPRW__HOMER_GROUP='Apps'
+
+# App-specific variables (SPRW_RUSTDESK_*)
+SPRW_RUSTDESK_IMAGE='!!RUSTDESK_IMAGE!!'            # official rustdesk-server image (multi-arch)
+SPRW_RUSTDESK_MEM_LIMIT='!!RUSTDESK_MEM_LIMIT!!'    # compose mem_limit per container (e.g. 64m)
+SPRW_RUSTDESK_TIMEZONE='!!TIMEZONE!!'
+SPRW_RUSTDESK_ENCRYPTED_ONLY='!!RUSTDESK_ENCRYPTED_ONLY!!'  # true or false
+SPRW_RUSTDESK_NAT_PORT='!!NAT_PORT!!'               # TCP, NAT type test (ID_PORT - 1)
+SPRW_RUSTDESK_ID_PORT='!!ID_PORT!!'                 # TCP+UDP, ID / rendezvous server
+SPRW_RUSTDESK_RELAY_PORT='!!RELAY_PORT!!'           # TCP, relay server
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__APPDOMAIN" ] || [ "$SPRW__APPDOMAIN" = '!!APPDOMAIN!!' ]; then
+	SPRW__APPDOMAIN=rustdesk.${SPRW__DOMAIN:-example.com}
+fi
+
+if [ -z "$SPRW__VOLUME_MODE" ] || [ "$SPRW__VOLUME_MODE" = '!!VOLUME_MODE!!' ]; then
+	SPRW__VOLUME_MODE=bind
+fi
+
+if [ -z "$SPRW__HOMER_LINK" ] || [ "$SPRW__HOMER_LINK" = '!!HOMER_LINK!!' ]; then
+	SPRW__HOMER_LINK=false
+fi
+
+if [ -z "$SPRW_RUSTDESK_IMAGE" ] || [ "$SPRW_RUSTDESK_IMAGE" = '!!RUSTDESK_IMAGE!!' ]; then
+	SPRW_RUSTDESK_IMAGE=rustdesk/rustdesk-server:latest
+fi
+if [ -z "$SPRW_RUSTDESK_MEM_LIMIT" ] || [ "$SPRW_RUSTDESK_MEM_LIMIT" = '!!RUSTDESK_MEM_LIMIT!!' ]; then
+	SPRW_RUSTDESK_MEM_LIMIT=64m
+fi
+if [ -z "$SPRW_RUSTDESK_TIMEZONE" ] || [ "$SPRW_RUSTDESK_TIMEZONE" = '!!TIMEZONE!!' ]; then
+	SPRW_RUSTDESK_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_RUSTDESK_ENCRYPTED_ONLY" ] || [ "$SPRW_RUSTDESK_ENCRYPTED_ONLY" = '!!RUSTDESK_ENCRYPTED_ONLY!!' ]; then
+	SPRW_RUSTDESK_ENCRYPTED_ONLY=true
+fi
+if [ -z "$SPRW_RUSTDESK_ID_PORT" ] || [ "$SPRW_RUSTDESK_ID_PORT" = '!!ID_PORT!!' ]; then
+	SPRW_RUSTDESK_ID_PORT=21116
+fi
+if [ -z "$SPRW_RUSTDESK_NAT_PORT" ] || [ "$SPRW_RUSTDESK_NAT_PORT" = '!!NAT_PORT!!' ]; then
+	SPRW_RUSTDESK_NAT_PORT=21115
+fi
+if [ -z "$SPRW_RUSTDESK_RELAY_PORT" ] || [ "$SPRW_RUSTDESK_RELAY_PORT" = '!!RELAY_PORT!!' ]; then
+	SPRW_RUSTDESK_RELAY_PORT=21117
+fi

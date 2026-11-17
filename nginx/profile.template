@@ -1,0 +1,66 @@
+#!/bin/bash
+# Default variables for the app "nginx" (static website)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (several stacks per customer, one per domain):
+#   app.sh nginx add <customer> <domain>
+#   app.sh nginx add lapha_de www.lapha.de
+#
+# The stack is named nginx_d_<domain_normalized>, e.g. nginx_d_www_lapha_de.
+# Put the website into /opt/docker-data/<customer>/nginx_d_<domain>/html.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='nginx'
+SPRW__APP_PREFIX='NGINX'
+
+# Global environment variables that are used in the app's templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. www.example.com
+
+# Global Jinja2 variables that are used in the app's templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Homer dashboard tile (optional; app.sh default is HOMER_LINK=true)
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Website'
+SPRW__HOMER_ICON='fas fa-globe'
+SPRW__HOMER_GROUP='Websites'
+
+# App-specific variables (SPRW_NGINX_*)
+SPRW_NGINX_IMAGE='!!NGINX_IMAGE!!'                  # official nginx image (multi-arch)
+SPRW_NGINX_MEM_LIMIT='!!NGINX_MEM_LIMIT!!'          # compose mem_limit (e.g. 64m)
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__APPDOMAIN" ] || [ "$SPRW__APPDOMAIN" = '!!APPDOMAIN!!' ]; then
+	SPRW__APPDOMAIN=www.${SPRW__DOMAIN:-example.com}
+fi
+
+if [ -z "$SPRW__VOLUME_MODE" ] || [ "$SPRW__VOLUME_MODE" = '!!VOLUME_MODE!!' ]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [ "$SPRW__HTTP_REDIRECT" = '!!HTTP_REDIRECT!!' ]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [ "$SPRW__LETSENCRYPT_METHOD" = '!!LETSENCRYPT_METHOD!!' ]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [ "$SPRW__EXTERNAL_ACCESS" = '!!EXTERNAL_ACCESS!!' ]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+
+if [ -z "$SPRW__HOMER_LINK" ] || [ "$SPRW__HOMER_LINK" = '!!HOMER_LINK!!' ]; then
+	SPRW__HOMER_LINK=true
+fi
+
+if [ -z "$SPRW_NGINX_IMAGE" ] || [ "$SPRW_NGINX_IMAGE" = '!!NGINX_IMAGE!!' ]; then
+	SPRW_NGINX_IMAGE=nginx:alpine
+fi
+if [ -z "$SPRW_NGINX_MEM_LIMIT" ] || [ "$SPRW_NGINX_MEM_LIMIT" = '!!NGINX_MEM_LIMIT!!' ]; then
+	SPRW_NGINX_MEM_LIMIT=64m
+fi

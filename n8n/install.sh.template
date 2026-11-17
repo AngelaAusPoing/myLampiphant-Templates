@@ -1,0 +1,27 @@
+#!/bin/bash
+# Install n8n data directories and networks. Do not print secrets.
+set -euo pipefail
+
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__APPDOMAIN="!!APPDOMAIN!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
+
+echo "Installing n8n for ${SPRW__CUSTOMER} (${SPRW__APPDOMAIN})..."
+
+mkdir -p "$SPRW__COMPOSE_DIR"
+mkdir -p "$SPRW__DATA_DIR/postgres"
+mkdir -p "$SPRW__DATA_DIR/n8n"
+
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_mylampiphant_networks "$SPRW__CUSTOMER"
+
+# Official n8n image runs as node (uid 1000); postgres:alpine as postgres (uid 70).
+chown -R 1000:1000 "$SPRW__DATA_DIR/n8n"
+chown -R 70:70 "$SPRW__DATA_DIR/postgres"
+
+echo "Installation finished."
+echo "n8n URL: https://${SPRW__APPDOMAIN}"
+echo "Data directory: ${SPRW__DATA_DIR}"
+echo "After the first start, create the owner account at https://${SPRW__APPDOMAIN}"

@@ -1,0 +1,28 @@
+#!/bin/bash
+# Install RustDesk server data directory and networks.
+set -euo pipefail
+
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__APPDOMAIN="!!APPDOMAIN!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
+SPRW_RUSTDESK_NAT_PORT="!!NAT_PORT!!"
+SPRW_RUSTDESK_ID_PORT="!!ID_PORT!!"
+SPRW_RUSTDESK_RELAY_PORT="!!RELAY_PORT!!"
+
+echo "Installing RustDesk server for ${SPRW__CUSTOMER} (${SPRW__APPDOMAIN})..."
+
+mkdir -p "$SPRW__COMPOSE_DIR"
+mkdir -p "$SPRW__DATA_DIR/data"
+chmod 700 "$SPRW__DATA_DIR/data"
+
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_mylampiphant_networks "$SPRW__CUSTOMER"
+
+echo "Installation finished."
+echo "ID server for the clients: ${SPRW__APPDOMAIN}:${SPRW_RUSTDESK_ID_PORT}"
+echo "Relay server:              ${SPRW__APPDOMAIN}:${SPRW_RUSTDESK_RELAY_PORT}"
+echo "Open in the firewall: ${SPRW_RUSTDESK_NAT_PORT}/tcp, ${SPRW_RUSTDESK_ID_PORT}/tcp+udp, ${SPRW_RUSTDESK_RELAY_PORT}/tcp"
+echo "After the first start, the public key for the clients is in ${SPRW__DATA_DIR}/data/id_ed25519.pub"
+echo "(the private key id_ed25519 next to it must never leave the server)."

@@ -1,0 +1,23 @@
+# === Stack variables (SPRW__*) ===
+# This file is sent to Komodo as the stack .env. Generated secrets belong here
+# and must not be committed.
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__APPDOMAIN=!!APPDOMAIN!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# === Images and memory limits (defaults; override in persistent config) ===
+SPRW_N8N_IMAGE=n8nio/n8n:latest
+SPRW_N8N_DB_IMAGE=postgres:16-alpine
+SPRW_N8N_MEM_LIMIT=512m
+SPRW_N8N_DB_MEM_LIMIT=256m
+SPRW_N8N_NODE_MAX_OLD_SPACE=384
+SPRW_N8N_TIMEZONE=Europe/Berlin
+SPRW_N8N_EXECUTIONS_MAX_AGE=168
+
+# === Database ===
+SPRW_N8N_DB_NAME=n8n
+SPRW_N8N_DB_USER=n8n
+SPRW_N8N_DB_PASSWORD=!!DB_PASSWORD!!
+
+# === n8n credentials encryption key (keep it; losing it makes stored credentials unreadable) ===
+SPRW_N8N_ENCRYPTION_KEY=!!ENCRYPTION_KEY!!

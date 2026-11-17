@@ -1,0 +1,15 @@
+# === Stack variables (SPRW__*) ===
+# This file is sent to Komodo as the stack .env.
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__APPDOMAIN=!!APPDOMAIN!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# === Image and memory limit (defaults; override in persistent config) ===
+SPRW_RUSTDESK_IMAGE=rustdesk/rustdesk-server:latest
+SPRW_RUSTDESK_MEM_LIMIT=64m
+SPRW_RUSTDESK_TIMEZONE=Europe/Berlin
+
+# === Host ports (must be unique per host; NAT_PORT = ID_PORT - 1) ===
+SPRW_RUSTDESK_NAT_PORT=!!NAT_PORT!!
+SPRW_RUSTDESK_ID_PORT=!!ID_PORT!!
+SPRW_RUSTDESK_RELAY_PORT=!!RELAY_PORT!!

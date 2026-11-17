@@ -1,0 +1,96 @@
+#!/bin/bash
+# Default variables for the app "n8n" (n8n + PostgreSQL)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (one stack per customer):
+#   app.sh n8n add <customer>
+#   app.sh n8n add lapha_de --var APPDOMAIN=n8n.lapha.de
+#
+# The stack is named n8n_c_<customer>, e.g. n8n_c_lapha_de.
+# The first user is created in the n8n web UI (owner account).
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='n8n'
+SPRW__APP_PREFIX='N8N'
+
+# Global environment variables that are used in the app's templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. n8n.example.com
+
+# Global Jinja2 variables that are used in the app's templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Homer dashboard tile (optional; app.sh default is HOMER_LINK=true)
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='n8n'
+SPRW__HOMER_ICON='fas fa-project-diagram'
+SPRW__HOMER_GROUP='Apps'
+
+# App-specific variables (SPRW_N8N_*)
+SPRW_N8N_IMAGE='!!N8N_IMAGE!!'                      # official n8n image (multi-arch)
+SPRW_N8N_DB_IMAGE='!!DB_IMAGE!!'                    # PostgreSQL image (multi-arch)
+SPRW_N8N_MEM_LIMIT='!!N8N_MEM_LIMIT!!'              # compose mem_limit for n8n (e.g. 512m)
+SPRW_N8N_DB_MEM_LIMIT='!!DB_MEM_LIMIT!!'            # compose mem_limit for PostgreSQL (e.g. 256m)
+SPRW_N8N_NODE_MAX_OLD_SPACE='!!NODE_MAX_OLD_SPACE!!'  # Node.js heap cap in MB
+SPRW_N8N_TIMEZONE='!!TIMEZONE!!'
+SPRW_N8N_EXECUTIONS_MAX_AGE='!!EXECUTIONS_MAX_AGE!!'  # hours to keep execution data
+SPRW_N8N_DB_NAME='!!DB_NAME!!'
+SPRW_N8N_DB_USER='!!DB_USER!!'
+SPRW_N8N_DB_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_N8N_ENCRYPTION_KEY="!!NEW_KEY!!"
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__APPDOMAIN" ] || [ "$SPRW__APPDOMAIN" = '!!APPDOMAIN!!' ]; then
+	SPRW__APPDOMAIN=n8n.${SPRW__DOMAIN:-example.com}
+fi
+
+if [ -z "$SPRW__VOLUME_MODE" ] || [ "$SPRW__VOLUME_MODE" = '!!VOLUME_MODE!!' ]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [ "$SPRW__HTTP_REDIRECT" = '!!HTTP_REDIRECT!!' ]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [ "$SPRW__LETSENCRYPT_METHOD" = '!!LETSENCRYPT_METHOD!!' ]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [ "$SPRW__EXTERNAL_ACCESS" = '!!EXTERNAL_ACCESS!!' ]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+
+if [ -z "$SPRW__HOMER_LINK" ] || [ "$SPRW__HOMER_LINK" = '!!HOMER_LINK!!' ]; then
+	SPRW__HOMER_LINK=true
+fi
+
+if [ -z "$SPRW_N8N_IMAGE" ] || [ "$SPRW_N8N_IMAGE" = '!!N8N_IMAGE!!' ]; then
+	SPRW_N8N_IMAGE=n8nio/n8n:latest
+fi
+if [ -z "$SPRW_N8N_DB_IMAGE" ] || [ "$SPRW_N8N_DB_IMAGE" = '!!DB_IMAGE!!' ]; then
+	SPRW_N8N_DB_IMAGE=postgres:16-alpine
+fi
+if [ -z "$SPRW_N8N_MEM_LIMIT" ] || [ "$SPRW_N8N_MEM_LIMIT" = '!!N8N_MEM_LIMIT!!' ]; then
+	SPRW_N8N_MEM_LIMIT=512m
+fi
+if [ -z "$SPRW_N8N_DB_MEM_LIMIT" ] || [ "$SPRW_N8N_DB_MEM_LIMIT" = '!!DB_MEM_LIMIT!!' ]; then
+	SPRW_N8N_DB_MEM_LIMIT=256m
+fi
+if [ -z "$SPRW_N8N_NODE_MAX_OLD_SPACE" ] || [ "$SPRW_N8N_NODE_MAX_OLD_SPACE" = '!!NODE_MAX_OLD_SPACE!!' ]; then
+	SPRW_N8N_NODE_MAX_OLD_SPACE=384
+fi
+if [ -z "$SPRW_N8N_TIMEZONE" ] || [ "$SPRW_N8N_TIMEZONE" = '!!TIMEZONE!!' ]; then
+	SPRW_N8N_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_N8N_EXECUTIONS_MAX_AGE" ] || [ "$SPRW_N8N_EXECUTIONS_MAX_AGE" = '!!EXECUTIONS_MAX_AGE!!' ]; then
+	SPRW_N8N_EXECUTIONS_MAX_AGE=168
+fi
+if [ -z "$SPRW_N8N_DB_NAME" ] || [ "$SPRW_N8N_DB_NAME" = '!!DB_NAME!!' ]; then
+	SPRW_N8N_DB_NAME=n8n
+fi
+if [ -z "$SPRW_N8N_DB_USER" ] || [ "$SPRW_N8N_DB_USER" = '!!DB_USER!!' ]; then
+	SPRW_N8N_DB_USER=n8n
+fi

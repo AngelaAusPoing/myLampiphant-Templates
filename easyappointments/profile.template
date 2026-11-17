@@ -1,0 +1,119 @@
+#!/bin/bash
+# Default variables for the app "easyappointments" (Easy!Appointments + MariaDB)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (several stacks per customer, one per domain):
+#   app.sh easyappointments add <customer> <domain>
+#   app.sh easyappointments add lapha_de buchung.lapha.de
+#
+# The stack is named easyappointments_d_<domain_normalized>.
+#
+# Options (Jinja2 / Docusaurus buttons):
+#   EASYAPPOINTMENTS_MAIL_ENABLED: false (default) | true   SMTP notifications
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='easyappointments'
+SPRW__APP_PREFIX='EASYAPPOINTMENTS'
+
+# Global environment variables that are used in the app's templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. buchung.example.com
+
+# Global Jinja2 variables that are used in the app's templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Homer dashboard tile (optional; app.sh default is HOMER_LINK=true)
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Terminbuchung'
+SPRW__HOMER_ICON='fas fa-calendar-check'
+SPRW__HOMER_GROUP='Apps'
+
+# App-specific variables (SPRW_EASYAPPOINTMENTS_*)
+SPRW_EASYAPPOINTMENTS_IMAGE='!!EASYAPPOINTMENTS_IMAGE!!'   # official image (multi-arch)
+SPRW_EASYAPPOINTMENTS_DB_IMAGE='!!DB_IMAGE!!'              # MariaDB image (multi-arch)
+SPRW_EASYAPPOINTMENTS_MEM_LIMIT='!!EASYAPPOINTMENTS_MEM_LIMIT!!'
+SPRW_EASYAPPOINTMENTS_DB_MEM_LIMIT='!!DB_MEM_LIMIT!!'
+SPRW_EASYAPPOINTMENTS_INNODB_BUFFER_POOL='!!INNODB_BUFFER_POOL!!'
+SPRW_EASYAPPOINTMENTS_TIMEZONE='!!TIMEZONE!!'
+SPRW_EASYAPPOINTMENTS_DB_NAME='!!DB_NAME!!'
+SPRW_EASYAPPOINTMENTS_DB_USER='!!DB_USER!!'
+SPRW_EASYAPPOINTMENTS_DB_ROOT_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_EASYAPPOINTMENTS_DB_PASSWORD="!!NEW_PASSWORD!!"
+
+# Mail: set MAIL_USER / MAIL_PASSWORD to an existing mailbox, then MAIL_ENABLED=true.
+SPRW_EASYAPPOINTMENTS_MAIL_ENABLED='!!MAIL_ENABLED!!'
+SPRW_EASYAPPOINTMENTS_MAIL_HOST='!!MAIL_HOST!!'
+SPRW_EASYAPPOINTMENTS_MAIL_PORT='!!MAIL_PORT!!'
+SPRW_EASYAPPOINTMENTS_MAIL_USER='!!MAIL_USER!!'
+SPRW_EASYAPPOINTMENTS_MAIL_PASSWORD='!!MAIL_PASSWORD!!'
+SPRW_EASYAPPOINTMENTS_MAIL_FROM='!!MAIL_FROM!!'
+SPRW_EASYAPPOINTMENTS_MAIL_FROM_NAME='!!MAIL_FROM_NAME!!'
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__APPDOMAIN" ] || [ "$SPRW__APPDOMAIN" = '!!APPDOMAIN!!' ]; then
+	SPRW__APPDOMAIN=buchung.${SPRW__DOMAIN:-example.com}
+fi
+
+if [ -z "$SPRW__VOLUME_MODE" ] || [ "$SPRW__VOLUME_MODE" = '!!VOLUME_MODE!!' ]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [ "$SPRW__HTTP_REDIRECT" = '!!HTTP_REDIRECT!!' ]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [ "$SPRW__LETSENCRYPT_METHOD" = '!!LETSENCRYPT_METHOD!!' ]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [ "$SPRW__EXTERNAL_ACCESS" = '!!EXTERNAL_ACCESS!!' ]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+
+if [ -z "$SPRW__HOMER_LINK" ] || [ "$SPRW__HOMER_LINK" = '!!HOMER_LINK!!' ]; then
+	SPRW__HOMER_LINK=true
+fi
+
+if [ -z "$SPRW_EASYAPPOINTMENTS_IMAGE" ] || [ "$SPRW_EASYAPPOINTMENTS_IMAGE" = '!!EASYAPPOINTMENTS_IMAGE!!' ]; then
+	SPRW_EASYAPPOINTMENTS_IMAGE=alextselegidis/easyappointments:latest
+fi
+if [ -z "$SPRW_EASYAPPOINTMENTS_DB_IMAGE" ] || [ "$SPRW_EASYAPPOINTMENTS_DB_IMAGE" = '!!DB_IMAGE!!' ]; then
+	SPRW_EASYAPPOINTMENTS_DB_IMAGE=mariadb:11.4-noble
+fi
+if [ -z "$SPRW_EASYAPPOINTMENTS_MEM_LIMIT" ] || [ "$SPRW_EASYAPPOINTMENTS_MEM_LIMIT" = '!!EASYAPPOINTMENTS_MEM_LIMIT!!' ]; then
+	SPRW_EASYAPPOINTMENTS_MEM_LIMIT=256m
+fi
+if [ -z "$SPRW_EASYAPPOINTMENTS_DB_MEM_LIMIT" ] || [ "$SPRW_EASYAPPOINTMENTS_DB_MEM_LIMIT" = '!!DB_MEM_LIMIT!!' ]; then
+	SPRW_EASYAPPOINTMENTS_DB_MEM_LIMIT=256m
+fi
+if [ -z "$SPRW_EASYAPPOINTMENTS_INNODB_BUFFER_POOL" ] || [ "$SPRW_EASYAPPOINTMENTS_INNODB_BUFFER_POOL" = '!!INNODB_BUFFER_POOL!!' ]; then
+	SPRW_EASYAPPOINTMENTS_INNODB_BUFFER_POOL=64M
+fi
+if [ -z "$SPRW_EASYAPPOINTMENTS_TIMEZONE" ] || [ "$SPRW_EASYAPPOINTMENTS_TIMEZONE" = '!!TIMEZONE!!' ]; then
+	SPRW_EASYAPPOINTMENTS_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_EASYAPPOINTMENTS_DB_NAME" ] || [ "$SPRW_EASYAPPOINTMENTS_DB_NAME" = '!!DB_NAME!!' ]; then
+	SPRW_EASYAPPOINTMENTS_DB_NAME=easyappointments
+fi
+if [ -z "$SPRW_EASYAPPOINTMENTS_DB_USER" ] || [ "$SPRW_EASYAPPOINTMENTS_DB_USER" = '!!DB_USER!!' ]; then
+	SPRW_EASYAPPOINTMENTS_DB_USER=easyappointments
+fi
+
+if [ -z "$SPRW_EASYAPPOINTMENTS_MAIL_ENABLED" ] || [ "$SPRW_EASYAPPOINTMENTS_MAIL_ENABLED" = '!!MAIL_ENABLED!!' ]; then
+	SPRW_EASYAPPOINTMENTS_MAIL_ENABLED=false
+fi
+if [ -z "$SPRW_EASYAPPOINTMENTS_MAIL_HOST" ] || [ "$SPRW_EASYAPPOINTMENTS_MAIL_HOST" = '!!MAIL_HOST!!' ]; then
+	SPRW_EASYAPPOINTMENTS_MAIL_HOST=mail.${SPRW__DOMAIN:-example.com}
+fi
+if [ -z "$SPRW_EASYAPPOINTMENTS_MAIL_PORT" ] || [ "$SPRW_EASYAPPOINTMENTS_MAIL_PORT" = '!!MAIL_PORT!!' ]; then
+	SPRW_EASYAPPOINTMENTS_MAIL_PORT=587
+fi
+if [ -z "$SPRW_EASYAPPOINTMENTS_MAIL_FROM" ] || [ "$SPRW_EASYAPPOINTMENTS_MAIL_FROM" = '!!MAIL_FROM!!' ]; then
+	SPRW_EASYAPPOINTMENTS_MAIL_FROM="noreply@${SPRW__APPDOMAIN}"
+fi
+if [ -z "$SPRW_EASYAPPOINTMENTS_MAIL_FROM_NAME" ] || [ "$SPRW_EASYAPPOINTMENTS_MAIL_FROM_NAME" = '!!MAIL_FROM_NAME!!' ]; then
+	SPRW_EASYAPPOINTMENTS_MAIL_FROM_NAME=Terminbuchung
+fi

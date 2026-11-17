@@ -1,0 +1,31 @@
+#!/bin/bash
+# Install Gitea data directories and networks. Do not print secrets.
+set -euo pipefail
+
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__APPDOMAIN="!!APPDOMAIN!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
+SPRW_GITEA_SSH_PORT="!!SSH_PORT!!"
+
+echo "Installing Gitea for ${SPRW__CUSTOMER} (${SPRW__APPDOMAIN})..."
+
+mkdir -p "$SPRW__COMPOSE_DIR"
+mkdir -p "$SPRW__DATA_DIR/data"
+mkdir -p "$SPRW__DATA_DIR/mysql"
+
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_mylampiphant_networks "$SPRW__CUSTOMER"
+
+# Gitea runs as git (USER_UID/GID 1000); official MariaDB as mysql (uid 999).
+chown -R 1000:1000 "$SPRW__DATA_DIR/data"
+chown -R 999:999 "$SPRW__DATA_DIR/mysql"
+
+echo "Installation finished."
+echo "Gitea URL: https://${SPRW__APPDOMAIN}"
+echo "Data directory: ${SPRW__DATA_DIR}"
+if [ -n "$SPRW_GITEA_SSH_PORT" ] && [[ "$SPRW_GITEA_SSH_PORT" != *'!!'* ]]; then
+	echo "Git over SSH: ssh://git@${SPRW__APPDOMAIN}:${SPRW_GITEA_SSH_PORT}/<owner>/<repo>.git (open this port in the firewall)"
+fi
+echo "After the first start, complete the Gitea setup at https://${SPRW__APPDOMAIN} and create the admin account."

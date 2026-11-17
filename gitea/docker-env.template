@@ -1,0 +1,23 @@
+# === Stack variables (SPRW__*) ===
+# This file is sent to Komodo as the stack .env. Generated secrets belong here
+# and must not be committed.
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__APPDOMAIN=!!APPDOMAIN!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# === Images and memory limits (defaults; override in persistent config) ===
+SPRW_GITEA_IMAGE=gitea/gitea:latest
+SPRW_GITEA_DB_IMAGE=mariadb:11.4-noble
+SPRW_GITEA_MEM_LIMIT=512m
+SPRW_GITEA_DB_MEM_LIMIT=384m
+SPRW_GITEA_INNODB_BUFFER_POOL=128M
+SPRW_GITEA_TIMEZONE=Europe/Berlin
+
+# === SSH (git clone via ssh://git@<domain>:<port>) ===
+SPRW_GITEA_SSH_PORT=!!SSH_PORT!!
+
+# === Database ===
+SPRW_GITEA_DB_NAME=gitea
+SPRW_GITEA_DB_USER=gitea
+SPRW_GITEA_DB_ROOT_PASSWORD=!!DB_ROOT_PASSWORD!!
+SPRW_GITEA_DB_PASSWORD=!!DB_PASSWORD!!

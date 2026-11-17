@@ -1,0 +1,107 @@
+#!/bin/bash
+# Default variables for the app "gitea" (Gitea + MariaDB)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (one stack per customer):
+#   app.sh gitea add <customer>
+#   app.sh gitea add lapha_de --var APPDOMAIN=git.lapha.de
+#
+# The stack is named gitea_c_<customer>, e.g. gitea_c_lapha_de.
+#
+# Options (Jinja2 / Docusaurus buttons):
+#   GITEA_SSH_ENABLED:  true (default) | false   publish the Git SSH port on the host
+#   GITEA_REGISTRATION: closed (default) | open  self-registration on the web UI
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='gitea'
+SPRW__APP_PREFIX='GITEA'
+
+# Global environment variables that are used in the app's templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. git.example.com (default: gitea.<domain>)
+
+# Global Jinja2 variables that are used in the app's templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Homer dashboard tile (optional; app.sh default is HOMER_LINK=true)
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Gitea'
+SPRW__HOMER_ICON='fab fa-git-alt'
+SPRW__HOMER_GROUP='Apps'
+
+# App-specific variables (SPRW_GITEA_*)
+SPRW_GITEA_IMAGE='!!GITEA_IMAGE!!'                  # official Gitea image (multi-arch)
+SPRW_GITEA_DB_IMAGE='!!DB_IMAGE!!'                  # MariaDB image (multi-arch)
+SPRW_GITEA_MEM_LIMIT='!!GITEA_MEM_LIMIT!!'          # compose mem_limit for Gitea (e.g. 512m)
+SPRW_GITEA_DB_MEM_LIMIT='!!DB_MEM_LIMIT!!'          # compose mem_limit for MariaDB (e.g. 384m)
+SPRW_GITEA_INNODB_BUFFER_POOL='!!INNODB_BUFFER_POOL!!'
+SPRW_GITEA_TIMEZONE='!!TIMEZONE!!'
+SPRW_GITEA_SSH_ENABLED='!!GITEA_SSH_ENABLED!!'      # true or false
+SPRW_GITEA_SSH_PORT='!!SSH_PORT!!'                  # host port for Git over SSH, unique per host
+SPRW_GITEA_REGISTRATION='!!GITEA_REGISTRATION!!'    # closed or open
+SPRW_GITEA_DB_NAME='!!DB_NAME!!'
+SPRW_GITEA_DB_USER='!!DB_USER!!'
+SPRW_GITEA_DB_ROOT_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_GITEA_DB_PASSWORD="!!NEW_PASSWORD!!"
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__APPDOMAIN" ] || [ "$SPRW__APPDOMAIN" = '!!APPDOMAIN!!' ]; then
+	SPRW__APPDOMAIN=gitea.${SPRW__DOMAIN:-example.com}
+fi
+
+if [ -z "$SPRW__VOLUME_MODE" ] || [ "$SPRW__VOLUME_MODE" = '!!VOLUME_MODE!!' ]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [ "$SPRW__HTTP_REDIRECT" = '!!HTTP_REDIRECT!!' ]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [ "$SPRW__LETSENCRYPT_METHOD" = '!!LETSENCRYPT_METHOD!!' ]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [ "$SPRW__EXTERNAL_ACCESS" = '!!EXTERNAL_ACCESS!!' ]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+
+if [ -z "$SPRW__HOMER_LINK" ] || [ "$SPRW__HOMER_LINK" = '!!HOMER_LINK!!' ]; then
+	SPRW__HOMER_LINK=true
+fi
+
+if [ -z "$SPRW_GITEA_IMAGE" ] || [ "$SPRW_GITEA_IMAGE" = '!!GITEA_IMAGE!!' ]; then
+	SPRW_GITEA_IMAGE=gitea/gitea:latest
+fi
+if [ -z "$SPRW_GITEA_DB_IMAGE" ] || [ "$SPRW_GITEA_DB_IMAGE" = '!!DB_IMAGE!!' ]; then
+	SPRW_GITEA_DB_IMAGE=mariadb:11.4-noble
+fi
+if [ -z "$SPRW_GITEA_MEM_LIMIT" ] || [ "$SPRW_GITEA_MEM_LIMIT" = '!!GITEA_MEM_LIMIT!!' ]; then
+	SPRW_GITEA_MEM_LIMIT=512m
+fi
+if [ -z "$SPRW_GITEA_DB_MEM_LIMIT" ] || [ "$SPRW_GITEA_DB_MEM_LIMIT" = '!!DB_MEM_LIMIT!!' ]; then
+	SPRW_GITEA_DB_MEM_LIMIT=384m
+fi
+if [ -z "$SPRW_GITEA_INNODB_BUFFER_POOL" ] || [ "$SPRW_GITEA_INNODB_BUFFER_POOL" = '!!INNODB_BUFFER_POOL!!' ]; then
+	SPRW_GITEA_INNODB_BUFFER_POOL=128M
+fi
+if [ -z "$SPRW_GITEA_TIMEZONE" ] || [ "$SPRW_GITEA_TIMEZONE" = '!!TIMEZONE!!' ]; then
+	SPRW_GITEA_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_GITEA_SSH_ENABLED" ] || [ "$SPRW_GITEA_SSH_ENABLED" = '!!GITEA_SSH_ENABLED!!' ]; then
+	SPRW_GITEA_SSH_ENABLED=true
+fi
+if [ -z "$SPRW_GITEA_SSH_PORT" ] || [ "$SPRW_GITEA_SSH_PORT" = '!!SSH_PORT!!' ]; then
+	SPRW_GITEA_SSH_PORT=2222
+fi
+if [ -z "$SPRW_GITEA_REGISTRATION" ] || [ "$SPRW_GITEA_REGISTRATION" = '!!GITEA_REGISTRATION!!' ]; then
+	SPRW_GITEA_REGISTRATION=closed
+fi
+if [ -z "$SPRW_GITEA_DB_NAME" ] || [ "$SPRW_GITEA_DB_NAME" = '!!DB_NAME!!' ]; then
+	SPRW_GITEA_DB_NAME=gitea
+fi
+if [ -z "$SPRW_GITEA_DB_USER" ] || [ "$SPRW_GITEA_DB_USER" = '!!DB_USER!!' ]; then
+	SPRW_GITEA_DB_USER=gitea
+fi
