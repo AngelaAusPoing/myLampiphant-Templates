@@ -20,3 +20,20 @@ logs/
 
 # Environment
 *.env.local
+
+# Backups / Editor-Reste (nie committen, nie veröffentlichen)
+*.bak
+*.bak.*
+*.bak[0-9]*
+*.backup
+*.backup.*
+*~
+*.swp
+
+# Secrets / Umgebungsdateien (nur *.template gehören ins Repo)
+.env
+.env.*
+*.pw
+*.key
+*.pem
+_legacy*/
