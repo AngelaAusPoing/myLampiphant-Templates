@@ -1,0 +1,211 @@
+#!/bin/bash
+# Default variables for the app "postiz" (Postiz social media scheduler, AGPL-3.0)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (one stack per customer; Postiz has teams and several users):
+#   app.sh postiz add <customer>
+#   app.sh postiz add <customer> --var APPDOMAIN=social.example.com
+#
+# The stack is named postiz_c_<customer>.
+# Register the first user in the web UI, then set REGISTRATION=closed and redeploy.
+# Each social network needs a developer app of its own (keys below); see
+# https://docs.postiz.com/providers for the callback URLs.
+#
+# RAM: Postiz plus Temporal need about 1.3-1.8 GB in normal use.
+#
+# Options (Jinja2 / Docusaurus buttons):
+#   SPRW_POSTIZ_REGISTRATION: open (default) | closed
+#   SPRW_POSTIZ_OIDC:         false (default) | true   (generic OIDC provider)
+# Postiz has no LDAP.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='postiz'
+SPRW__APP_PREFIX='POSTIZ'
+
+# Global environment variables that are used in the app's templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. social.example.com
+
+# Global Jinja2 variables that are used in the app's templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Homer dashboard tile (optional; app.sh default is HOMER_LINK=true)
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Postiz'
+SPRW__HOMER_ICON='fas fa-share-alt'
+SPRW__HOMER_GROUP='Apps'
+
+# App-specific variables (SPRW_POSTIZ_*)
+SPRW_POSTIZ_IMAGE='!!IMAGE!!'                       # postiz-app, ARM64-verified
+SPRW_POSTIZ_DB_IMAGE='!!DB_IMAGE!!'                 # PostgreSQL (also used by Temporal)
+SPRW_POSTIZ_REDIS_IMAGE='!!REDIS_IMAGE!!'           # Valkey (Redis-compatible)
+SPRW_POSTIZ_TEMPORAL_IMAGE='!!TEMPORAL_IMAGE!!'     # Temporal server with schema auto-setup (version tested by Postiz)
+SPRW_POSTIZ_MEM_LIMIT='!!MEM_LIMIT!!'
+SPRW_POSTIZ_CPUS='!!CPUS!!'
+SPRW_POSTIZ_DB_MEM_LIMIT='!!DB_MEM_LIMIT!!'
+SPRW_POSTIZ_REDIS_MEM_LIMIT='!!REDIS_MEM_LIMIT!!'
+SPRW_POSTIZ_TEMPORAL_MEM_LIMIT='!!TEMPORAL_MEM_LIMIT!!'
+SPRW_POSTIZ_TIMEZONE='!!TIMEZONE!!'
+SPRW_POSTIZ_INTERNAL_SOURCERANGE='!!INTERNAL_SOURCERANGE!!'  # EXTERNAL_ACCESS=false: allowed client networks
+SPRW_POSTIZ_REGISTRATION='!!REGISTRATION!!'         # open | closed
+SPRW_POSTIZ_OIDC='!!OIDC!!'                         # true | false
+SPRW_POSTIZ_DB_NAME='!!DB_NAME!!'
+SPRW_POSTIZ_DB_USER='!!DB_USER!!'
+SPRW_POSTIZ_DB_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_POSTIZ_JWT_SECRET="!!NEW_KEY!!"
+
+# Social network developer apps (leave empty for networks you do not use)
+SPRW_POSTIZ_X_API_KEY='!!X_API_KEY!!'
+SPRW_POSTIZ_X_API_SECRET='!!X_API_SECRET!!'
+SPRW_POSTIZ_LINKEDIN_CLIENT_ID='!!LINKEDIN_CLIENT_ID!!'
+SPRW_POSTIZ_LINKEDIN_CLIENT_SECRET='!!LINKEDIN_CLIENT_SECRET!!'
+SPRW_POSTIZ_FACEBOOK_APP_ID='!!FACEBOOK_APP_ID!!'
+SPRW_POSTIZ_FACEBOOK_APP_SECRET='!!FACEBOOK_APP_SECRET!!'
+SPRW_POSTIZ_THREADS_APP_ID='!!THREADS_APP_ID!!'
+SPRW_POSTIZ_THREADS_APP_SECRET='!!THREADS_APP_SECRET!!'
+SPRW_POSTIZ_YOUTUBE_CLIENT_ID='!!YOUTUBE_CLIENT_ID!!'
+SPRW_POSTIZ_YOUTUBE_CLIENT_SECRET='!!YOUTUBE_CLIENT_SECRET!!'
+SPRW_POSTIZ_MASTODON_URL='!!MASTODON_URL!!'
+SPRW_POSTIZ_MASTODON_CLIENT_ID='!!MASTODON_CLIENT_ID!!'
+SPRW_POSTIZ_MASTODON_CLIENT_SECRET='!!MASTODON_CLIENT_SECRET!!'
+
+# Generic OIDC provider (used with OIDC=true), e.g. Authelia or Authentik
+SPRW_POSTIZ_OIDC_DISPLAY_NAME='!!OIDC_DISPLAY_NAME!!'
+SPRW_POSTIZ_OIDC_URL='!!OIDC_URL!!'
+SPRW_POSTIZ_OIDC_AUTH_URL='!!OIDC_AUTH_URL!!'
+SPRW_POSTIZ_OIDC_TOKEN_URL='!!OIDC_TOKEN_URL!!'
+SPRW_POSTIZ_OIDC_USERINFO_URL='!!OIDC_USERINFO_URL!!'
+SPRW_POSTIZ_OIDC_CLIENT_ID='!!OIDC_CLIENT_ID!!'
+SPRW_POSTIZ_OIDC_CLIENT_SECRET='!!OIDC_CLIENT_SECRET!!'
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__APPDOMAIN" ] || [[ "$SPRW__APPDOMAIN" == *'!!'* ]]; then
+	SPRW__APPDOMAIN=postiz.${SPRW__DOMAIN:-example.com}
+fi
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW__HOMER_LINK" ] || [[ "$SPRW__HOMER_LINK" == *'!!'* ]]; then
+	SPRW__HOMER_LINK=true
+fi
+if [ -z "$SPRW_POSTIZ_IMAGE" ] || [[ "$SPRW_POSTIZ_IMAGE" == *'!!'* ]]; then
+	SPRW_POSTIZ_IMAGE=ghcr.io/gitroomhq/postiz-app:v2.26.0
+fi
+if [ -z "$SPRW_POSTIZ_DB_IMAGE" ] || [[ "$SPRW_POSTIZ_DB_IMAGE" == *'!!'* ]]; then
+	SPRW_POSTIZ_DB_IMAGE=postgres:17.12-alpine
+fi
+if [ -z "$SPRW_POSTIZ_REDIS_IMAGE" ] || [[ "$SPRW_POSTIZ_REDIS_IMAGE" == *'!!'* ]]; then
+	SPRW_POSTIZ_REDIS_IMAGE=valkey/valkey:9.0.7-alpine
+fi
+if [ -z "$SPRW_POSTIZ_TEMPORAL_IMAGE" ] || [[ "$SPRW_POSTIZ_TEMPORAL_IMAGE" == *'!!'* ]]; then
+	SPRW_POSTIZ_TEMPORAL_IMAGE=temporalio/auto-setup:1.28.1
+fi
+if [ -z "$SPRW_POSTIZ_MEM_LIMIT" ] || [[ "$SPRW_POSTIZ_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_POSTIZ_MEM_LIMIT=1536m
+fi
+if [ -z "$SPRW_POSTIZ_CPUS" ] || [[ "$SPRW_POSTIZ_CPUS" == *'!!'* ]]; then
+	SPRW_POSTIZ_CPUS=1.5
+fi
+if [ -z "$SPRW_POSTIZ_DB_MEM_LIMIT" ] || [[ "$SPRW_POSTIZ_DB_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_POSTIZ_DB_MEM_LIMIT=256m
+fi
+if [ -z "$SPRW_POSTIZ_REDIS_MEM_LIMIT" ] || [[ "$SPRW_POSTIZ_REDIS_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_POSTIZ_REDIS_MEM_LIMIT=64m
+fi
+if [ -z "$SPRW_POSTIZ_TEMPORAL_MEM_LIMIT" ] || [[ "$SPRW_POSTIZ_TEMPORAL_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_POSTIZ_TEMPORAL_MEM_LIMIT=512m
+fi
+if [ -z "$SPRW_POSTIZ_TIMEZONE" ] || [[ "$SPRW_POSTIZ_TIMEZONE" == *'!!'* ]]; then
+	SPRW_POSTIZ_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_POSTIZ_INTERNAL_SOURCERANGE" ] || [[ "$SPRW_POSTIZ_INTERNAL_SOURCERANGE" == *'!!'* ]]; then
+	SPRW_POSTIZ_INTERNAL_SOURCERANGE=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.1/32
+fi
+if [ -z "$SPRW_POSTIZ_REGISTRATION" ] || [[ "$SPRW_POSTIZ_REGISTRATION" == *'!!'* ]]; then
+	SPRW_POSTIZ_REGISTRATION=open
+fi
+if [ -z "$SPRW_POSTIZ_OIDC" ] || [[ "$SPRW_POSTIZ_OIDC" == *'!!'* ]]; then
+	SPRW_POSTIZ_OIDC=false
+fi
+if [ -z "$SPRW_POSTIZ_OIDC_DISPLAY_NAME" ] || [[ "$SPRW_POSTIZ_OIDC_DISPLAY_NAME" == *'!!'* ]]; then
+	SPRW_POSTIZ_OIDC_DISPLAY_NAME=SSO
+fi
+if [ -z "$SPRW_POSTIZ_DB_NAME" ] || [[ "$SPRW_POSTIZ_DB_NAME" == *'!!'* ]]; then
+	SPRW_POSTIZ_DB_NAME=postiz
+fi
+if [ -z "$SPRW_POSTIZ_DB_USER" ] || [[ "$SPRW_POSTIZ_DB_USER" == *'!!'* ]]; then
+	SPRW_POSTIZ_DB_USER=postiz
+fi
+if [ -z "$SPRW_POSTIZ_MASTODON_URL" ] || [[ "$SPRW_POSTIZ_MASTODON_URL" == *'!!'* ]]; then
+	SPRW_POSTIZ_MASTODON_URL=https://mastodon.social
+fi
+# Optional values without a default: clear unreplaced placeholders.
+if [[ "$SPRW_POSTIZ_X_API_KEY" == *'!!'* ]]; then
+	SPRW_POSTIZ_X_API_KEY=''
+fi
+if [[ "$SPRW_POSTIZ_X_API_SECRET" == *'!!'* ]]; then
+	SPRW_POSTIZ_X_API_SECRET=''
+fi
+if [[ "$SPRW_POSTIZ_LINKEDIN_CLIENT_ID" == *'!!'* ]]; then
+	SPRW_POSTIZ_LINKEDIN_CLIENT_ID=''
+fi
+if [[ "$SPRW_POSTIZ_LINKEDIN_CLIENT_SECRET" == *'!!'* ]]; then
+	SPRW_POSTIZ_LINKEDIN_CLIENT_SECRET=''
+fi
+if [[ "$SPRW_POSTIZ_FACEBOOK_APP_ID" == *'!!'* ]]; then
+	SPRW_POSTIZ_FACEBOOK_APP_ID=''
+fi
+if [[ "$SPRW_POSTIZ_FACEBOOK_APP_SECRET" == *'!!'* ]]; then
+	SPRW_POSTIZ_FACEBOOK_APP_SECRET=''
+fi
+if [[ "$SPRW_POSTIZ_THREADS_APP_ID" == *'!!'* ]]; then
+	SPRW_POSTIZ_THREADS_APP_ID=''
+fi
+if [[ "$SPRW_POSTIZ_THREADS_APP_SECRET" == *'!!'* ]]; then
+	SPRW_POSTIZ_THREADS_APP_SECRET=''
+fi
+if [[ "$SPRW_POSTIZ_YOUTUBE_CLIENT_ID" == *'!!'* ]]; then
+	SPRW_POSTIZ_YOUTUBE_CLIENT_ID=''
+fi
+if [[ "$SPRW_POSTIZ_YOUTUBE_CLIENT_SECRET" == *'!!'* ]]; then
+	SPRW_POSTIZ_YOUTUBE_CLIENT_SECRET=''
+fi
+if [[ "$SPRW_POSTIZ_MASTODON_CLIENT_ID" == *'!!'* ]]; then
+	SPRW_POSTIZ_MASTODON_CLIENT_ID=''
+fi
+if [[ "$SPRW_POSTIZ_MASTODON_CLIENT_SECRET" == *'!!'* ]]; then
+	SPRW_POSTIZ_MASTODON_CLIENT_SECRET=''
+fi
+if [[ "$SPRW_POSTIZ_OIDC_URL" == *'!!'* ]]; then
+	SPRW_POSTIZ_OIDC_URL=''
+fi
+if [[ "$SPRW_POSTIZ_OIDC_AUTH_URL" == *'!!'* ]]; then
+	SPRW_POSTIZ_OIDC_AUTH_URL=''
+fi
+if [[ "$SPRW_POSTIZ_OIDC_TOKEN_URL" == *'!!'* ]]; then
+	SPRW_POSTIZ_OIDC_TOKEN_URL=''
+fi
+if [[ "$SPRW_POSTIZ_OIDC_USERINFO_URL" == *'!!'* ]]; then
+	SPRW_POSTIZ_OIDC_USERINFO_URL=''
+fi
+if [[ "$SPRW_POSTIZ_OIDC_CLIENT_ID" == *'!!'* ]]; then
+	SPRW_POSTIZ_OIDC_CLIENT_ID=''
+fi
+if [[ "$SPRW_POSTIZ_OIDC_CLIENT_SECRET" == *'!!'* ]]; then
+	SPRW_POSTIZ_OIDC_CLIENT_SECRET=''
+fi

@@ -1,0 +1,28 @@
+#!/bin/bash
+# Prepare Postiz data directories and networks. Do not print secrets.
+set -euo pipefail
+
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__APPDOMAIN="!!APPDOMAIN!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
+
+echo "Installing Postiz for ${SPRW__CUSTOMER} (${SPRW__APPDOMAIN})..."
+
+mkdir -p "$SPRW__COMPOSE_DIR"
+mkdir -p "$SPRW__DATA_DIR/config" "$SPRW__DATA_DIR/uploads" "$SPRW__DATA_DIR/postgres" "$SPRW__DATA_DIR/redis"
+
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_shared_networks
+ensure_customer_network "$SPRW__CUSTOMER"
+
+# postgres:alpine runs as postgres (uid 70), valkey:alpine as valkey (uid 999); Postiz as root.
+chown -R 70:70 "$SPRW__DATA_DIR/postgres"
+chown -R 999:999 "$SPRW__DATA_DIR/redis"
+
+echo "Installation finished."
+echo "Postiz URL: https://${SPRW__APPDOMAIN}"
+echo "Data directory: ${SPRW__DATA_DIR}"
+echo "The first start takes a few minutes (Temporal creates its database schema)."
+echo "Register the first user at https://${SPRW__APPDOMAIN}, then set REGISTRATION=closed and redeploy."
