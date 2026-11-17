@@ -421,7 +421,7 @@ LDIF
         parse_org_member_args "$@"
         group="${POSITIONAL[0]:-}"
         require_group_name "$group"
-        if [ ${#POSITIONAL[@]} -gt 1 ]; then
+        if [ {% raw %}${#POSITIONAL[@]}{% endraw %} -gt 1 ]; then
             echo "ERROR: unexpected argument '${POSITIONAL[1]}' (pass users with --member)" >&2
             usage
         fi
@@ -429,11 +429,11 @@ LDIF
         gdn=$(group_dn "$group" "$ORG")
         if entry_exists "$gdn"; then
             echo "Group ${gdn} already exists"
-            if [ ${#MEMBERS[@]} -gt 0 ]; then
+            if [ {% raw %}${#MEMBERS[@]}{% endraw %} -gt 0 ]; then
                 add_members_to_group "$gdn" "$ORG" "${MEMBERS[@]}"
             fi
         else
-            if [ ${#MEMBERS[@]} -eq 0 ]; then
+            if [ {% raw %}${#MEMBERS[@]}{% endraw %} -eq 0 ]; then
                 echo "ERROR: groupOfNames requires at least one --member <uid> when creating ${gdn}" >&2
                 exit 1
             fi
@@ -469,10 +469,10 @@ LDIF
         group="${POSITIONAL[0]:-}"
         require_group_name "$group"
         # Positional uids after the group name are also accepted.
-        if [ ${#POSITIONAL[@]} -gt 1 ]; then
+        if [ {% raw %}${#POSITIONAL[@]}{% endraw %} -gt 1 ]; then
             MEMBERS+=("${POSITIONAL[@]:1}")
         fi
-        if [ ${#MEMBERS[@]} -eq 0 ]; then
+        if [ {% raw %}${#MEMBERS[@]}{% endraw %} -eq 0 ]; then
             echo "ERROR: add-member requires at least one uid (--member <uid> or a positional uid)" >&2
             usage
         fi
@@ -490,10 +490,10 @@ LDIF
         parse_org_member_args "$@"
         group="${POSITIONAL[0]:-}"
         require_group_name "$group"
-        if [ ${#POSITIONAL[@]} -gt 1 ]; then
+        if [ {% raw %}${#POSITIONAL[@]}{% endraw %} -gt 1 ]; then
             MEMBERS+=("${POSITIONAL[@]:1}")
         fi
-        if [ ${#MEMBERS[@]} -eq 0 ]; then
+        if [ {% raw %}${#MEMBERS[@]}{% endraw %} -eq 0 ]; then
             echo "ERROR: remove-member requires at least one uid (--member <uid> or a positional uid)" >&2
             usage
         fi
@@ -527,7 +527,7 @@ LDIF
         need_container
         shift
         parse_org_member_args "$@"
-        if [ ${#POSITIONAL[@]} -gt 0 ]; then
+        if [ {% raw %}${#POSITIONAL[@]}{% endraw %} -gt 0 ]; then
             echo "ERROR: unexpected argument '${POSITIONAL[0]}' (use --org <o>)" >&2
             usage
         fi
