@@ -1,0 +1,29 @@
+# === Stack variables (SPRW__*) ===
+# This file is sent to Komodo as the stack .env. Generated secrets belong here
+# and must not be committed.
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__APPDOMAIN=!!APPDOMAIN!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# === Images and limits (defaults; override in persistent config) ===
+SPRW_IMMICH_IMAGE=ghcr.io/immich-app/immich-server:v3.4.1
+SPRW_IMMICH_ML_IMAGE=ghcr.io/immich-app/immich-machine-learning:v3.4.1
+SPRW_IMMICH_REDIS_IMAGE=valkey/valkey:9.0.7-alpine
+SPRW_IMMICH_DB_IMAGE=ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+SPRW_IMMICH_MEM_LIMIT=1024m
+SPRW_IMMICH_ML_MEM_LIMIT=1536m
+SPRW_IMMICH_ML_CPUS=1.5
+SPRW_IMMICH_ML_MODEL_TTL=300
+SPRW_IMMICH_ML_THREADS=1
+SPRW_IMMICH_REDIS_MEM_LIMIT=64m
+SPRW_IMMICH_DB_MEM_LIMIT=512m
+SPRW_IMMICH_TIMEZONE=Europe/Berlin
+
+# === Storage and access ===
+SPRW_IMMICH_UPLOAD_DIR=!!UPLOAD_DIR!!
+SPRW_IMMICH_INTERNAL_SOURCERANGE=!!INTERNAL_SOURCERANGE!!
+
+# === Database (Immich allows only A-Za-z0-9 in the password; app.sh generates such values) ===
+SPRW_IMMICH_DB_NAME=immich
+SPRW_IMMICH_DB_USER=immich
+SPRW_IMMICH_DB_PASSWORD=!!DB_PASSWORD!!

@@ -1,0 +1,36 @@
+#!/bin/bash
+# Prepare Immich data directories and networks. No secrets are set or printed here.
+set -euo pipefail
+
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__APPDOMAIN="!!APPDOMAIN!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
+UPLOAD_DIR="!!UPLOAD_DIR!!"
+
+echo "Installing Immich for ${SPRW__CUSTOMER} (${SPRW__APPDOMAIN})..."
+
+mkdir -p "$SPRW__COMPOSE_DIR"
+mkdir -p "$SPRW__DATA_DIR/postgres"
+mkdir -p "$UPLOAD_DIR"
+{%- if SPRW_IMMICH_ML_ENABLED == "true" %}
+mkdir -p "$SPRW__DATA_DIR/model-cache"
+{%- endif %}
+
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_shared_networks
+ensure_customer_network "$SPRW__CUSTOMER"
+
+# immich-server and machine-learning run as root; the Immich PostgreSQL image as postgres (uid 999).
+chown -R 999:999 "$SPRW__DATA_DIR/postgres"
+
+echo "Installation finished."
+echo "Immich URL: https://${SPRW__APPDOMAIN}"
+echo "Photos and videos: ${UPLOAD_DIR}"
+echo "After the first start, create the admin account at https://${SPRW__APPDOMAIN}"
+{%- if SPRW_IMMICH_ML_ENABLED == "true" %}
+echo "Machine learning is on: the first face/smart-search job downloads models (several hundred MB)."
+{%- else %}
+echo "Machine learning is off: switch it off in Administration > Settings > Machine Learning as well."
+{%- endif %}

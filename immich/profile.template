@@ -1,0 +1,135 @@
+#!/bin/bash
+# Default variables for the app "immich" (Immich photo/video backup)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (one stack per customer; Immich has its own multi-user accounts):
+#   app.sh immich add <customer>
+#   app.sh immich add <customer> --var APPDOMAIN=photos.example.com --var ML_ENABLED=true
+#
+# The stack is named immich_c_<customer>.
+# The first account created in the web UI becomes the admin.
+#
+# Options (Jinja2 / Docusaurus buttons):
+#   SPRW_IMMICH_ML_ENABLED: false (default, saves 1-1.5 GB RAM) | true
+#   SPRW_IMMICH_DB_STORAGE: ssd (default) | hdd
+# Login via OIDC (OAuth) is configured later in the Immich admin UI; Immich has no LDAP.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='immich'
+SPRW__APP_PREFIX='IMMICH'
+
+# Global environment variables that are used in the app's templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. photos.example.com
+
+# Global Jinja2 variables that are used in the app's templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Homer dashboard tile (optional; app.sh default is HOMER_LINK=true)
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Immich'
+SPRW__HOMER_ICON='fas fa-images'
+SPRW__HOMER_GROUP='Media'
+
+# App-specific variables (SPRW_IMMICH_*)
+SPRW_IMMICH_IMAGE='!!IMAGE!!'                       # immich-server, ARM64-verified
+SPRW_IMMICH_ML_IMAGE='!!ML_IMAGE!!'                 # immich-machine-learning (same version as the server!)
+SPRW_IMMICH_REDIS_IMAGE='!!REDIS_IMAGE!!'           # Valkey (Redis-compatible)
+SPRW_IMMICH_DB_IMAGE='!!DB_IMAGE!!'                 # Immich's PostgreSQL with VectorChord; do not replace with plain postgres
+SPRW_IMMICH_MEM_LIMIT='!!MEM_LIMIT!!'
+SPRW_IMMICH_ML_MEM_LIMIT='!!ML_MEM_LIMIT!!'
+SPRW_IMMICH_ML_CPUS='!!ML_CPUS!!'
+SPRW_IMMICH_ML_MODEL_TTL='!!ML_MODEL_TTL!!'         # seconds without requests before models are unloaded
+SPRW_IMMICH_ML_THREADS='!!ML_THREADS!!'
+SPRW_IMMICH_REDIS_MEM_LIMIT='!!REDIS_MEM_LIMIT!!'
+SPRW_IMMICH_DB_MEM_LIMIT='!!DB_MEM_LIMIT!!'
+SPRW_IMMICH_TIMEZONE='!!TIMEZONE!!'
+SPRW_IMMICH_UPLOAD_DIR='!!UPLOAD_DIR!!'             # host folder for photos/videos (grows a lot!)
+SPRW_IMMICH_INTERNAL_SOURCERANGE='!!INTERNAL_SOURCERANGE!!'  # EXTERNAL_ACCESS=false: allowed client networks
+SPRW_IMMICH_ML_ENABLED='!!ML_ENABLED!!'             # true | false
+SPRW_IMMICH_DB_STORAGE='!!DB_STORAGE!!'             # ssd | hdd
+SPRW_IMMICH_DB_NAME='!!DB_NAME!!'
+SPRW_IMMICH_DB_USER='!!DB_USER!!'
+SPRW_IMMICH_DB_PASSWORD="!!NEW_PASSWORD!!"
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__APPDOMAIN" ] || [[ "$SPRW__APPDOMAIN" == *'!!'* ]]; then
+	SPRW__APPDOMAIN=immich.${SPRW__DOMAIN:-example.com}
+fi
+
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW__HOMER_LINK" ] || [[ "$SPRW__HOMER_LINK" == *'!!'* ]]; then
+	SPRW__HOMER_LINK=true
+fi
+
+if [ -z "$SPRW_IMMICH_IMAGE" ] || [[ "$SPRW_IMMICH_IMAGE" == *'!!'* ]]; then
+	SPRW_IMMICH_IMAGE=ghcr.io/immich-app/immich-server:v3.4.1
+fi
+if [ -z "$SPRW_IMMICH_ML_IMAGE" ] || [[ "$SPRW_IMMICH_ML_IMAGE" == *'!!'* ]]; then
+	SPRW_IMMICH_ML_IMAGE=ghcr.io/immich-app/immich-machine-learning:v3.4.1
+fi
+if [ -z "$SPRW_IMMICH_REDIS_IMAGE" ] || [[ "$SPRW_IMMICH_REDIS_IMAGE" == *'!!'* ]]; then
+	SPRW_IMMICH_REDIS_IMAGE=valkey/valkey:9.0.7-alpine
+fi
+if [ -z "$SPRW_IMMICH_DB_IMAGE" ] || [[ "$SPRW_IMMICH_DB_IMAGE" == *'!!'* ]]; then
+	SPRW_IMMICH_DB_IMAGE=ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+fi
+if [ -z "$SPRW_IMMICH_MEM_LIMIT" ] || [[ "$SPRW_IMMICH_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_IMMICH_MEM_LIMIT=1024m
+fi
+if [ -z "$SPRW_IMMICH_ML_MEM_LIMIT" ] || [[ "$SPRW_IMMICH_ML_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_IMMICH_ML_MEM_LIMIT=1536m
+fi
+if [ -z "$SPRW_IMMICH_ML_CPUS" ] || [[ "$SPRW_IMMICH_ML_CPUS" == *'!!'* ]]; then
+	SPRW_IMMICH_ML_CPUS=1.5
+fi
+if [ -z "$SPRW_IMMICH_ML_MODEL_TTL" ] || [[ "$SPRW_IMMICH_ML_MODEL_TTL" == *'!!'* ]]; then
+	SPRW_IMMICH_ML_MODEL_TTL=300
+fi
+if [ -z "$SPRW_IMMICH_ML_THREADS" ] || [[ "$SPRW_IMMICH_ML_THREADS" == *'!!'* ]]; then
+	SPRW_IMMICH_ML_THREADS=1
+fi
+if [ -z "$SPRW_IMMICH_REDIS_MEM_LIMIT" ] || [[ "$SPRW_IMMICH_REDIS_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_IMMICH_REDIS_MEM_LIMIT=64m
+fi
+if [ -z "$SPRW_IMMICH_DB_MEM_LIMIT" ] || [[ "$SPRW_IMMICH_DB_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_IMMICH_DB_MEM_LIMIT=512m
+fi
+if [ -z "$SPRW_IMMICH_TIMEZONE" ] || [[ "$SPRW_IMMICH_TIMEZONE" == *'!!'* ]]; then
+	SPRW_IMMICH_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_IMMICH_UPLOAD_DIR" ] || [[ "$SPRW_IMMICH_UPLOAD_DIR" == *'!!'* ]]; then
+	SPRW_IMMICH_UPLOAD_DIR=!!DATA_DIR!!/library
+fi
+if [ -z "$SPRW_IMMICH_INTERNAL_SOURCERANGE" ] || [[ "$SPRW_IMMICH_INTERNAL_SOURCERANGE" == *'!!'* ]]; then
+	SPRW_IMMICH_INTERNAL_SOURCERANGE=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.1/32
+fi
+if [ -z "$SPRW_IMMICH_ML_ENABLED" ] || [[ "$SPRW_IMMICH_ML_ENABLED" == *'!!'* ]]; then
+	SPRW_IMMICH_ML_ENABLED=false
+fi
+if [ -z "$SPRW_IMMICH_DB_STORAGE" ] || [[ "$SPRW_IMMICH_DB_STORAGE" == *'!!'* ]]; then
+	SPRW_IMMICH_DB_STORAGE=ssd
+fi
+if [ -z "$SPRW_IMMICH_DB_NAME" ] || [[ "$SPRW_IMMICH_DB_NAME" == *'!!'* ]]; then
+	SPRW_IMMICH_DB_NAME=immich
+fi
+if [ -z "$SPRW_IMMICH_DB_USER" ] || [[ "$SPRW_IMMICH_DB_USER" == *'!!'* ]]; then
+	SPRW_IMMICH_DB_USER=immich
+fi
