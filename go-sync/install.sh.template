@@ -35,4 +35,9 @@ chmod 755 "$SPRW__COMPOSE_DIR/init/dynamodb-init.sh"
 chown -R 1000:1000 "$SPRW__DATA_DIR/dynamodb"
 
 echo "Installation prepared. Komodo builds go-sync from the upstream repo on the first deploy."
-echo "Brave: start with --sync-url=https://${SPRW__APPDOMAIN}/v2"
+{%- if PATH_PROTECT == "true" %}
+echo "Brave (desktop): start with --sync-url=https://${SPRW__APPDOMAIN}/<ACCESS_PATH>/v2"
+echo "  <ACCESS_PATH> is SPRW_GOSYNC_ACCESS_PATH in the persistent config (not printed here)."
+{%- elif PATH_PROTECT == "false" %}
+echo "Brave (desktop): start with --sync-url=https://${SPRW__APPDOMAIN}/v2"
+{%- endif %}

@@ -20,7 +20,15 @@
 #
 # Login: Firefox still signs in with a Mozilla account (accounts.firefox.com);
 # only the sync data is stored here. LDAP/OIDC is not possible without
-# self-hosting the whole Mozilla accounts stack.
+# self-hosting the whole Mozilla accounts stack, and no proxy login (Authelia,
+# basic auth) can be put in front: Firefox sends its own Authorization header
+# (Bearer/Hawk) without cookies. Access is limited instead by
+#   PATH_PROTECT=true     tokenserver only under https://<APPDOMAIN>/<ACCESS_PATH>/1.0/sync/1.5
+#   ALLOW_NEW_USERS=false only accounts that already synced here (set after onboarding)
+#   EXTERNAL_ACCESS=false VPN/LAN only
+# ACCESS_PATH is a random path segment (generated once). It is not a password, but
+# treat it like an unlisted link: it ends up in the Traefik labels (Komodo) and in
+# every client's settings. Changing it later means re-entering the URL on all clients.
 
 # The following variables are read by app.sh
 SPRW__APP_NAME='syncstorage-rs'
@@ -40,6 +48,9 @@ SPRW__HOMER_ICON='fab fa-firefox-browser'
 SPRW__HOMER_GROUP='Apps'
 
 SPRW_SYNCSTORAGE_IPALLOW_RANGES='!!IPALLOW_RANGES!!'   # used when EXTERNAL_ACCESS=false
+SPRW_SYNCSTORAGE_PATH_PROTECT='!!PATH_PROTECT!!'       # true | false: tokenserver only under /<ACCESS_PATH>/
+SPRW_SYNCSTORAGE_ACCESS_PATH="!!NEW_KEY!!"             # random path segment, generated once
+SPRW_SYNCSTORAGE_ALLOW_NEW_USERS='!!ALLOW_NEW_USERS!!' # true | false: false = only accounts that already synced here
 
 # Build (Komodo builds the image from the upstream repo at this tag)
 SPRW_SYNCSTORAGE_VERSION='!!SYNCSTORAGE_VERSION!!'     # release tag of mozilla-services/syncstorage-rs
@@ -79,6 +90,12 @@ if [ -z "$SPRW__HOMER_LINK" ] || [[ "$SPRW__HOMER_LINK" == *'!!'* ]]; then
 fi
 if [ -z "$SPRW_SYNCSTORAGE_IPALLOW_RANGES" ] || [[ "$SPRW_SYNCSTORAGE_IPALLOW_RANGES" == *'!!'* ]]; then
 	SPRW_SYNCSTORAGE_IPALLOW_RANGES=10.8.0.0/24,10.50.0.0/16,192.168.0.0/16,172.16.0.0/12,127.0.0.1/32
+fi
+if [ -z "$SPRW_SYNCSTORAGE_PATH_PROTECT" ] || [[ "$SPRW_SYNCSTORAGE_PATH_PROTECT" == *'!!'* ]]; then
+	SPRW_SYNCSTORAGE_PATH_PROTECT=true
+fi
+if [ -z "$SPRW_SYNCSTORAGE_ALLOW_NEW_USERS" ] || [[ "$SPRW_SYNCSTORAGE_ALLOW_NEW_USERS" == *'!!'* ]]; then
+	SPRW_SYNCSTORAGE_ALLOW_NEW_USERS=true
 fi
 if [ -z "$SPRW_SYNCSTORAGE_VERSION" ] || [[ "$SPRW_SYNCSTORAGE_VERSION" == *'!!'* ]]; then
 	SPRW_SYNCSTORAGE_VERSION=0.25.0
@@ -120,6 +137,9 @@ HOMER_NAME="$SPRW__HOMER_NAME"
 HOMER_ICON="$SPRW__HOMER_ICON"
 HOMER_GROUP="$SPRW__HOMER_GROUP"
 IPALLOW_RANGES="$SPRW_SYNCSTORAGE_IPALLOW_RANGES"
+PATH_PROTECT="$SPRW_SYNCSTORAGE_PATH_PROTECT"
+ACCESS_PATH="$SPRW_SYNCSTORAGE_ACCESS_PATH"
+ALLOW_NEW_USERS="$SPRW_SYNCSTORAGE_ALLOW_NEW_USERS"
 SYNCSTORAGE_VERSION="$SPRW_SYNCSTORAGE_VERSION"
 SYNCSTORAGE_REPO="$SPRW_SYNCSTORAGE_REPO"
 DB_IMAGE="$SPRW_SYNCSTORAGE_DB_IMAGE"

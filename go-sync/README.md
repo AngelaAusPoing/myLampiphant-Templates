@@ -24,11 +24,20 @@ go-sync 15-40 MB, DynamoDB Local (Java) 200-300 MB, Redis 5-20 MB: about 250 MB 
 ## Login and access
 
 Brave clients authenticate with their sync chain (sync code); there are no user accounts, so
-LDAP/OIDC does not apply. Anyone who knows the URL can create a chain; use
-`EXTERNAL_ACCESS=false` (VPN/LAN only) to restrict it.
+LDAP/OIDC does not apply, and no proxy login (Authelia, basic auth) fits in front: Chromium's
+sync client sends `Authorization: Bearer <signed timestamp>` with credentials mode "omit"
+(no cookies, no login redirects). go-sync itself only has a block list (`BLOCKED_CLIENT_IDS`).
 
-Brave desktop: start with `--sync-url=https://<APPDOMAIN>/v2`. On mobile, a custom sync URL is
-not an official setting; check the client before relying on it.
+Access is limited instead by:
+
+- `PATH_PROTECT=true` (default): only `https://<APPDOMAIN>/<ACCESS_PATH>/v2` is routed;
+  Traefik strips the prefix (safe: the token signs a timestamp, not the URL).
+  `ACCESS_PATH` is generated once (persistent config); it is a capability URL, not a password.
+- Without `PATH_PROTECT` only `/v2` is routed. `/metrics` and `/health-check` are never public.
+- `EXTERNAL_ACCESS=false`: VPN/LAN only.
+
+Brave desktop: start with `--sync-url=https://<APPDOMAIN>/<ACCESS_PATH>/v2` (or the
+`SyncUrl` policy). Brave on Android/iOS cannot use a custom sync server.
 
 ## Options
 
@@ -36,5 +45,6 @@ not an official setting; check the client before relying on it.
 |---|---|---|
 | `VOLUME_MODE` | `bind` \| `named_bind` \| `managed` | `bind` |
 | `EXTERNAL_ACCESS` | `true` \| `false` | `true` |
+| `PATH_PROTECT` | `true` \| `false` | `true` |
 | `HTTP_REDIRECT` | `true` \| `false` | `true` |
 | `LETSENCRYPT_METHOD` | `acme` \| `dns01` | `acme` |

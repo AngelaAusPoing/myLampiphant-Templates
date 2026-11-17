@@ -18,8 +18,16 @@
 # is created once by the init container (dynamodb-init.sh).
 #
 # Login: Brave clients authenticate with their own sync chain (sync code);
-# there is no user account, so LDAP/OIDC does not apply. Anyone who knows the
-# URL can create a sync chain; restrict with EXTERNAL_ACCESS=false (VPN/LAN).
+# there is no user account, so LDAP/OIDC does not apply. No proxy login
+# (Authelia, basic auth) can be put in front: Brave sends its own
+# "Authorization: Bearer" token and no cookies. Anyone who knows the URL can
+# create a sync chain, so access is limited by
+#   PATH_PROTECT=true     API only under https://<APPDOMAIN>/<ACCESS_PATH>/v2
+#                         (start Brave with --sync-url=https://<APPDOMAIN>/<ACCESS_PATH>/v2)
+#   EXTERNAL_ACCESS=false VPN/LAN only
+# ACCESS_PATH is a random path segment (generated once). It is not a password, but
+# treat it like an unlisted link: it ends up in the Traefik labels (Komodo) and in
+# the Brave start parameters. /metrics and the health check are never published.
 
 # The following variables are read by app.sh
 SPRW__APP_NAME='go-sync'
@@ -39,6 +47,8 @@ SPRW__HOMER_ICON='fas fa-sync'
 SPRW__HOMER_GROUP='Apps'
 
 SPRW_GOSYNC_IPALLOW_RANGES='!!IPALLOW_RANGES!!'     # used when EXTERNAL_ACCESS=false
+SPRW_GOSYNC_PATH_PROTECT='!!PATH_PROTECT!!'         # true | false: API only under /<ACCESS_PATH>/v2
+SPRW_GOSYNC_ACCESS_PATH="!!NEW_KEY!!"               # random path segment, generated once
 
 # Build (Komodo builds the image from the upstream repo at this commit;
 # upstream has no release tag since v0.1.21 from 2023, master is maintained)
@@ -76,6 +86,9 @@ if [ -z "$SPRW__HOMER_LINK" ] || [[ "$SPRW__HOMER_LINK" == *'!!'* ]]; then
 fi
 if [ -z "$SPRW_GOSYNC_IPALLOW_RANGES" ] || [[ "$SPRW_GOSYNC_IPALLOW_RANGES" == *'!!'* ]]; then
 	SPRW_GOSYNC_IPALLOW_RANGES=10.8.0.0/24,10.50.0.0/16,192.168.0.0/16,172.16.0.0/12,127.0.0.1/32
+fi
+if [ -z "$SPRW_GOSYNC_PATH_PROTECT" ] || [[ "$SPRW_GOSYNC_PATH_PROTECT" == *'!!'* ]]; then
+	SPRW_GOSYNC_PATH_PROTECT=true
 fi
 if [ -z "$SPRW_GOSYNC_VERSION" ] || [[ "$SPRW_GOSYNC_VERSION" == *'!!'* ]]; then
 	SPRW_GOSYNC_VERSION=76745a639255f81c5a4a3d5093d6a3f0fa53f50e
@@ -123,6 +136,8 @@ HOMER_NAME="$SPRW__HOMER_NAME"
 HOMER_ICON="$SPRW__HOMER_ICON"
 HOMER_GROUP="$SPRW__HOMER_GROUP"
 IPALLOW_RANGES="$SPRW_GOSYNC_IPALLOW_RANGES"
+PATH_PROTECT="$SPRW_GOSYNC_PATH_PROTECT"
+ACCESS_PATH="$SPRW_GOSYNC_ACCESS_PATH"
 GOSYNC_VERSION="$SPRW_GOSYNC_VERSION"
 GOSYNC_REPO="$SPRW_GOSYNC_REPO"
 DYNAMODB_IMAGE="$SPRW_GOSYNC_DYNAMODB_IMAGE"

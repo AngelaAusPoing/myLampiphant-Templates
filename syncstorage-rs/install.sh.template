@@ -69,4 +69,15 @@ unset db_pw master metrics db_url
 
 echo "Installation prepared. Komodo builds the image from the upstream repo on the first deploy."
 echo "  Expect 30-60 minutes and 2-3 GB RAM for the Rust build on a 2-core ARM64 host."
+{%- if PATH_PROTECT == "true" %}
+echo "Firefox: about:config -> identity.sync.tokenserver.uri = https://${SPRW__APPDOMAIN}/<ACCESS_PATH>/1.0/sync/1.5"
+echo "  <ACCESS_PATH> is SPRW_SYNCSTORAGE_ACCESS_PATH in ${CONFIG_FILE} (not printed here)."
+{%- elif PATH_PROTECT == "false" %}
 echo "Firefox: about:config -> identity.sync.tokenserver.uri = https://${SPRW__APPDOMAIN}/1.0/sync/1.5"
+{%- endif %}
+{%- if ALLOW_NEW_USERS == "true" %}
+echo "New Mozilla accounts can still register. After everyone has synced once, set"
+echo "  SPRW_SYNCSTORAGE_ALLOW_NEW_USERS=false in ${CONFIG_FILE} and redeploy."
+{%- elif ALLOW_NEW_USERS == "false" %}
+echo "ALLOW_NEW_USERS=false: only Mozilla accounts that already synced here can use the server."
+{%- endif %}
