@@ -1,0 +1,131 @@
+#!/bin/bash
+# Default variables for the app "syncstorage-rs" (Mozilla Firefox Sync server:
+# syncstorage + tokenserver in one Rust binary, PostgreSQL backend)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (one stack per customer):
+#   app.sh syncstorage-rs add <customer>
+#   app.sh syncstorage-rs add <customer> --var APPDOMAIN=ffsync.example.com
+#
+# The stack is named syncstorage-rs_c_<customer>.
+#
+# Image: Mozilla publishes linux/amd64 images only (ghcr.io/mozilla-services/
+# syncstorage-rs/syncserver-postgres). On ARM64 Komodo builds the image from the
+# pinned upstream git tag (compose "build" with a git context, upstream
+# Dockerfile, build args for the PostgreSQL backend). The Rust build needs
+# about 2-3 GB RAM and 30-60 minutes on a 2-core ARM64 host.
+#
+# Login: Firefox still signs in with a Mozilla account (accounts.firefox.com);
+# only the sync data is stored here. LDAP/OIDC is not possible without
+# self-hosting the whole Mozilla accounts stack.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='syncstorage-rs'
+SPRW__APP_PREFIX='SYNCSTORAGE'
+
+# Global (customer/domain-specific values are !!PLACEHOLDER!!, filled by app.sh)
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. ffsync.example.com
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false (false = VPN/LAN only)
+
+# No Homer tile by default: there is no web UI, only an API for Firefox.
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Firefox Sync'
+SPRW__HOMER_ICON='fab fa-firefox-browser'
+SPRW__HOMER_GROUP='Apps'
+
+SPRW_SYNCSTORAGE_IPALLOW_RANGES='!!IPALLOW_RANGES!!'   # used when EXTERNAL_ACCESS=false
+
+# Build (Komodo builds the image from the upstream repo at this tag)
+SPRW_SYNCSTORAGE_VERSION='!!SYNCSTORAGE_VERSION!!'     # release tag of mozilla-services/syncstorage-rs
+SPRW_SYNCSTORAGE_REPO='!!SYNCSTORAGE_REPO!!'           # git URL used as Docker build context
+SPRW_SYNCSTORAGE_DB_IMAGE='!!DB_IMAGE!!'               # official PostgreSQL, ARM64 verified
+SPRW_SYNCSTORAGE_MEM_LIMIT='!!SYNCSTORAGE_MEM_LIMIT!!'
+SPRW_SYNCSTORAGE_DB_MEM_LIMIT='!!DB_MEM_LIMIT!!'
+SPRW_SYNCSTORAGE_TIMEZONE='!!TIMEZONE!!'
+SPRW_SYNCSTORAGE_LOG_LEVEL='!!LOG_LEVEL!!'             # RUST_LOG: error, warn, info, debug
+
+# Database and secrets (generated once, never sent to Komodo)
+SPRW_SYNCSTORAGE_DB_NAME='!!DB_NAME!!'
+SPRW_SYNCSTORAGE_DB_USER='!!DB_USER!!'
+SPRW_SYNCSTORAGE_DB_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_SYNCSTORAGE_MASTER_SECRET="!!NEW_KEY!!"
+SPRW_SYNCSTORAGE_METRICS_HASH_SECRET="!!NEW_KEY!!"
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, change the values above instead (defaults for empty values).
+if [ -z "$SPRW__APPDOMAIN" ] || [[ "$SPRW__APPDOMAIN" == *'!!'* ]]; then
+	SPRW__APPDOMAIN=ffsync.${SPRW__DOMAIN:-example.com}
+fi
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW__HOMER_LINK" ] || [[ "$SPRW__HOMER_LINK" == *'!!'* ]]; then
+	SPRW__HOMER_LINK=false
+fi
+if [ -z "$SPRW_SYNCSTORAGE_IPALLOW_RANGES" ] || [[ "$SPRW_SYNCSTORAGE_IPALLOW_RANGES" == *'!!'* ]]; then
+	SPRW_SYNCSTORAGE_IPALLOW_RANGES=10.8.0.0/24,10.50.0.0/16,192.168.0.0/16,172.16.0.0/12,127.0.0.1/32
+fi
+if [ -z "$SPRW_SYNCSTORAGE_VERSION" ] || [[ "$SPRW_SYNCSTORAGE_VERSION" == *'!!'* ]]; then
+	SPRW_SYNCSTORAGE_VERSION=0.25.0
+fi
+if [ -z "$SPRW_SYNCSTORAGE_REPO" ] || [[ "$SPRW_SYNCSTORAGE_REPO" == *'!!'* ]]; then
+	SPRW_SYNCSTORAGE_REPO=https://github.com/mozilla-services/syncstorage-rs.git
+fi
+if [ -z "$SPRW_SYNCSTORAGE_DB_IMAGE" ] || [[ "$SPRW_SYNCSTORAGE_DB_IMAGE" == *'!!'* ]]; then
+	SPRW_SYNCSTORAGE_DB_IMAGE=postgres:18.7-alpine
+fi
+if [ -z "$SPRW_SYNCSTORAGE_MEM_LIMIT" ] || [[ "$SPRW_SYNCSTORAGE_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_SYNCSTORAGE_MEM_LIMIT=192m
+fi
+if [ -z "$SPRW_SYNCSTORAGE_DB_MEM_LIMIT" ] || [[ "$SPRW_SYNCSTORAGE_DB_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_SYNCSTORAGE_DB_MEM_LIMIT=256m
+fi
+if [ -z "$SPRW_SYNCSTORAGE_TIMEZONE" ] || [[ "$SPRW_SYNCSTORAGE_TIMEZONE" == *'!!'* ]]; then
+	SPRW_SYNCSTORAGE_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_SYNCSTORAGE_LOG_LEVEL" ] || [[ "$SPRW_SYNCSTORAGE_LOG_LEVEL" == *'!!'* ]]; then
+	SPRW_SYNCSTORAGE_LOG_LEVEL=warn
+fi
+if [ -z "$SPRW_SYNCSTORAGE_DB_NAME" ] || [[ "$SPRW_SYNCSTORAGE_DB_NAME" == *'!!'* ]]; then
+	SPRW_SYNCSTORAGE_DB_NAME=syncserver
+fi
+if [ -z "$SPRW_SYNCSTORAGE_DB_USER" ] || [[ "$SPRW_SYNCSTORAGE_DB_USER" == *'!!'* ]]; then
+	SPRW_SYNCSTORAGE_DB_USER=sync
+fi
+
+# ------------------------------------------------------------------------------------------------
+# Bridge for app.sh: placeholders are resolved by their bare name.
+APPDOMAIN="$SPRW__APPDOMAIN"
+VOLUME_MODE="$SPRW__VOLUME_MODE"
+HTTP_REDIRECT="$SPRW__HTTP_REDIRECT"
+LETSENCRYPT_METHOD="$SPRW__LETSENCRYPT_METHOD"
+EXTERNAL_ACCESS="$SPRW__EXTERNAL_ACCESS"
+HOMER_LINK="$SPRW__HOMER_LINK"
+HOMER_NAME="$SPRW__HOMER_NAME"
+HOMER_ICON="$SPRW__HOMER_ICON"
+HOMER_GROUP="$SPRW__HOMER_GROUP"
+IPALLOW_RANGES="$SPRW_SYNCSTORAGE_IPALLOW_RANGES"
+SYNCSTORAGE_VERSION="$SPRW_SYNCSTORAGE_VERSION"
+SYNCSTORAGE_REPO="$SPRW_SYNCSTORAGE_REPO"
+DB_IMAGE="$SPRW_SYNCSTORAGE_DB_IMAGE"
+SYNCSTORAGE_MEM_LIMIT="$SPRW_SYNCSTORAGE_MEM_LIMIT"
+DB_MEM_LIMIT="$SPRW_SYNCSTORAGE_DB_MEM_LIMIT"
+TIMEZONE="$SPRW_SYNCSTORAGE_TIMEZONE"
+LOG_LEVEL="$SPRW_SYNCSTORAGE_LOG_LEVEL"
+DB_NAME="$SPRW_SYNCSTORAGE_DB_NAME"
+DB_USER="$SPRW_SYNCSTORAGE_DB_USER"

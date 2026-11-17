@@ -1,0 +1,15 @@
+# === App variables (syncstorage-rs) ===
+# This file is sent to Komodo as the stack .env. No passwords, keys or tokens
+# belong here: DB password and master secrets live only in the persistent
+# config and in <data_dir>/secrets/*.env (written by install.sh).
+APPDOMAIN=!!APPDOMAIN!!
+CUSTOMER=!!CUSTOMER!!
+STACKNAME=!!STACKNAME!!
+
+# === syncstorage-rs (non-secret) ===
+SYNCSTORAGE_VERSION=!!SYNCSTORAGE_VERSION!!
+DB_IMAGE=!!DB_IMAGE!!
+SYNCSTORAGE_MEM_LIMIT=!!SYNCSTORAGE_MEM_LIMIT!!
+DB_MEM_LIMIT=!!DB_MEM_LIMIT!!
+TIMEZONE=!!TIMEZONE!!
+LOG_LEVEL=!!LOG_LEVEL!!
