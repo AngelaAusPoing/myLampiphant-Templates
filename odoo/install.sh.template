@@ -55,4 +55,4 @@ echo "The database password is stored in the persistent config only (not printed
 {%- if SPRW_ODOO_DB_INIT == "true" %}
 echo "First start: wait 1-2 minutes while the database is initialised."
 {%- endif %}
-echo "Set a strong master password in Odoo (database manager) right after the first login."
+echo "The Odoo master password (admin_passwd) is generated in the persistent config (SPRW_ODOO_ADMIN_PASSWD) and not printed."

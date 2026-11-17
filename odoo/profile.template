@@ -17,6 +17,12 @@
 #     true  = on the very first start a wrapper script initialises the database
 #             (odoo -i base) and then starts Odoo; later starts skip this step
 #     false = plain Odoo start, create the database in the Odoo web UI
+#   SPRW_ODOO_LIST_DB: false (default) | true
+#     false = database manager/list disabled, Odoo locked to SPRW_ODOO_DB_NAME
+#     true  = database manager enabled (protected by the master password)
+#
+# The master password (SPRW_ODOO_ADMIN_PASSWD, Odoo admin_passwd) is generated
+# once here and never printed. Read it from this file when you need it.
 #
 # Do not change SPRW_ODOO_DB_IMAGE to another PostgreSQL major version on an
 # existing installation (the data directory belongs to one major version).
@@ -50,6 +56,8 @@ SPRW_ODOO_INTERNAL_SOURCERANGE='!!INTERNAL_SOURCERANGE!!'  # EXTERNAL_ACCESS=fal
 SPRW_ODOO_DB_NAME='!!DB_NAME!!'
 SPRW_ODOO_DB_USER='!!DB_USER!!'
 SPRW_ODOO_DB_PASSWORD="!!NEW_PASSWORD!!"
+SPRW_ODOO_LIST_DB='!!LIST_DB!!'                     # false or true (database manager)
+SPRW_ODOO_ADMIN_PASSWD="!!NEW_PASSWORD!!"           # Odoo master password (admin_passwd)
 
 # ------------------------------------------------------------------------------------------------
 # Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
@@ -96,4 +104,7 @@ if [ -z "$SPRW_ODOO_DB_NAME" ] || [[ "$SPRW_ODOO_DB_NAME" == *'!!'* ]]; then
 fi
 if [ -z "$SPRW_ODOO_DB_USER" ] || [[ "$SPRW_ODOO_DB_USER" == *'!!'* ]]; then
 	SPRW_ODOO_DB_USER=odoo
+fi
+if [ -z "$SPRW_ODOO_LIST_DB" ] || [[ "$SPRW_ODOO_LIST_DB" == *'!!'* ]]; then
+	SPRW_ODOO_LIST_DB=false
 fi

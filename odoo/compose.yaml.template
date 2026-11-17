@@ -9,6 +9,12 @@
 #   SPRW_ODOO_DB_INIT: true | false
 #     true  = first start initialises the database with a wrapper script (default)
 #     false = plain Odoo start, create the database in the web UI
+#   SPRW_ODOO_LIST_DB: false | true
+#     false = database manager and database list disabled, Odoo is locked to
+#             SPRW_ODOO_DB_NAME (db_name + dbfilter) (default)
+#     true  = database manager enabled (protected by the master password)
+# The master password SPRW_ODOO_ADMIN_PASSWD is generated once in the
+# persistent config and always set (admin_passwd).
 services:
   db:
     image: ${SPRW_ODOO_DB_IMAGE:-postgres:16-alpine}
@@ -72,11 +78,31 @@ services:
       - POSTGRES_PASSWORD=${SPRW_ODOO_DB_PASSWORD}
       - POSTGRES_DB=${SPRW_ODOO_DB_NAME:-odoo}
       - PROXY_MODE=${SPRW_ODOO_PROXY_MODE:-True}
-    {%- if SPRW_ODOO_DB_INIT == "true" %}
-    command: ["/usr/local/bin/init-odoo.sh"]
-    {%- elif SPRW_ODOO_DB_INIT == "false" %}
-    # Default image command (odoo)
-    {%- endif %}
+      # Master password (database manager) and database name for the start
+      # script below; written into a private copy of odoo.conf, never printed.
+      - ODOO_ADMIN_PASSWD=${SPRW_ODOO_ADMIN_PASSWD}
+      - ODOO_DB_NAME=${SPRW_ODOO_DB_NAME:-odoo}
+    # Start script: copy the image odoo.conf to a private file, add admin_passwd
+    # (and the database lock), point ODOO_RC at it, then start Odoo.
+    command:
+      - sh
+      - -c
+      - |
+        umask 077
+        cp /etc/odoo/odoo.conf /tmp/odoo.conf
+        printf 'admin_passwd = %s\n' "$$ODOO_ADMIN_PASSWD" >> /tmp/odoo.conf
+        {%- if SPRW_ODOO_LIST_DB == "false" %}
+        printf 'list_db = False\ndb_name = %s\ndbfilter = ^%s$$\n' "$$ODOO_DB_NAME" "$$ODOO_DB_NAME" >> /tmp/odoo.conf
+        {%- elif SPRW_ODOO_LIST_DB == "true" %}
+        printf 'list_db = True\n' >> /tmp/odoo.conf
+        {%- endif %}
+        unset ODOO_ADMIN_PASSWD
+        export ODOO_RC=/tmp/odoo.conf
+        {%- if SPRW_ODOO_DB_INIT == "true" %}
+        exec /usr/local/bin/init-odoo.sh
+        {%- elif SPRW_ODOO_DB_INIT == "false" %}
+        exec /entrypoint.sh odoo
+        {%- endif %}
     depends_on:
       db:
         condition: service_healthy
