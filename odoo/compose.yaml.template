@@ -90,11 +90,19 @@ services:
       - |
         umask 077
         cp /etc/odoo/odoo.conf /tmp/odoo.conf
-        printf 'admin_passwd = %s\n' "$$ODOO_ADMIN_PASSWD" >> /tmp/odoo.conf
+        printf %s "admin_passwd = " >> /tmp/odoo.conf
+        printf %s "$$ODOO_ADMIN_PASSWD" >> /tmp/odoo.conf
+        echo >> /tmp/odoo.conf
         {%- if SPRW_ODOO_LIST_DB == "false" %}
-        printf 'list_db = False\ndb_name = %s\ndbfilter = ^%s$$\n' "$$ODOO_DB_NAME" "$$ODOO_DB_NAME" >> /tmp/odoo.conf
+        echo "list_db = False" >> /tmp/odoo.conf
+        printf %s "db_name = " >> /tmp/odoo.conf
+        printf %s "$$ODOO_DB_NAME" >> /tmp/odoo.conf
+        echo >> /tmp/odoo.conf
+        printf %s "dbfilter = ^" >> /tmp/odoo.conf
+        printf %s "$$ODOO_DB_NAME" >> /tmp/odoo.conf
+        echo '$' >> /tmp/odoo.conf
         {%- elif SPRW_ODOO_LIST_DB == "true" %}
-        printf 'list_db = True\n' >> /tmp/odoo.conf
+        echo "list_db = True" >> /tmp/odoo.conf
         {%- endif %}
         unset ODOO_ADMIN_PASSWD
         export ODOO_RC=/tmp/odoo.conf
