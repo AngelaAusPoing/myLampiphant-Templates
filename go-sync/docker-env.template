@@ -1,0 +1,18 @@
+# === App variables (go-sync) ===
+# This file is sent to Komodo as the stack .env. go-sync needs no secrets:
+# DynamoDB Local accepts any static key, and Redis is only on the stack network.
+APPDOMAIN=!!APPDOMAIN!!
+CUSTOMER=!!CUSTOMER!!
+STACKNAME=!!STACKNAME!!
+
+# === go-sync (non-secret) ===
+GOSYNC_VERSION=!!GOSYNC_VERSION!!
+DYNAMODB_IMAGE=!!DYNAMODB_IMAGE!!
+AWSCLI_IMAGE=!!AWSCLI_IMAGE!!
+REDIS_IMAGE=!!REDIS_IMAGE!!
+GOSYNC_MEM_LIMIT=!!GOSYNC_MEM_LIMIT!!
+DYNAMODB_MEM_LIMIT=!!DYNAMODB_MEM_LIMIT!!
+DYNAMODB_HEAP=!!DYNAMODB_HEAP!!
+REDIS_MEM_LIMIT=!!REDIS_MEM_LIMIT!!
+TABLE_NAME=!!TABLE_NAME!!
+TIMEZONE=!!TIMEZONE!!

@@ -1,0 +1,136 @@
+#!/bin/bash
+# Default variables for the app "go-sync" (Brave Sync Server v2)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (one stack per customer):
+#   app.sh go-sync add <customer>
+#   app.sh go-sync add <customer> --var APPDOMAIN=brave-sync.example.com
+#
+# The stack is named go-sync_c_<customer>.
+#
+# Image: Brave publishes no image. Komodo builds it from the upstream repo at a
+# pinned commit (compose "build" with a git context, upstream Dockerfile, Go
+# build, about 1 GB RAM and a few minutes on ARM64). Datastore: DynamoDB Local
+# (official amazon/dynamodb-local, ARM64) + Redis (official, ARM64). The table
+# is created once by the init container (dynamodb-init.sh).
+#
+# Login: Brave clients authenticate with their own sync chain (sync code);
+# there is no user account, so LDAP/OIDC does not apply. Anyone who knows the
+# URL can create a sync chain; restrict with EXTERNAL_ACCESS=false (VPN/LAN).
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='go-sync'
+SPRW__APP_PREFIX='GOSYNC'
+
+# Global (customer/domain-specific values are !!PLACEHOLDER!!, filled by app.sh)
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. brave-sync.example.com
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false (false = VPN/LAN only)
+
+# No Homer tile by default: there is no web UI, only an API for Brave.
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Brave Sync'
+SPRW__HOMER_ICON='fas fa-sync'
+SPRW__HOMER_GROUP='Apps'
+
+SPRW_GOSYNC_IPALLOW_RANGES='!!IPALLOW_RANGES!!'     # used when EXTERNAL_ACCESS=false
+
+# Build (Komodo builds the image from the upstream repo at this commit;
+# upstream has no release tag since v0.1.21 from 2023, master is maintained)
+SPRW_GOSYNC_VERSION='!!GOSYNC_VERSION!!'            # full commit SHA (or tag) of brave/go-sync
+SPRW_GOSYNC_REPO='!!GOSYNC_REPO!!'                  # git URL used as Docker build context
+SPRW_GOSYNC_DYNAMODB_IMAGE='!!DYNAMODB_IMAGE!!'
+SPRW_GOSYNC_AWSCLI_IMAGE='!!AWSCLI_IMAGE!!'
+SPRW_GOSYNC_REDIS_IMAGE='!!REDIS_IMAGE!!'
+SPRW_GOSYNC_MEM_LIMIT='!!GOSYNC_MEM_LIMIT!!'
+SPRW_GOSYNC_DYNAMODB_MEM_LIMIT='!!DYNAMODB_MEM_LIMIT!!'
+SPRW_GOSYNC_DYNAMODB_HEAP='!!DYNAMODB_HEAP!!'       # Java max heap of DynamoDB Local in MB
+SPRW_GOSYNC_REDIS_MEM_LIMIT='!!REDIS_MEM_LIMIT!!'
+SPRW_GOSYNC_TABLE_NAME='!!TABLE_NAME!!'
+SPRW_GOSYNC_TIMEZONE='!!TIMEZONE!!'
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, change the values above instead (defaults for empty values).
+if [ -z "$SPRW__APPDOMAIN" ] || [[ "$SPRW__APPDOMAIN" == *'!!'* ]]; then
+	SPRW__APPDOMAIN=brave-sync.${SPRW__DOMAIN:-example.com}
+fi
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW__HOMER_LINK" ] || [[ "$SPRW__HOMER_LINK" == *'!!'* ]]; then
+	SPRW__HOMER_LINK=false
+fi
+if [ -z "$SPRW_GOSYNC_IPALLOW_RANGES" ] || [[ "$SPRW_GOSYNC_IPALLOW_RANGES" == *'!!'* ]]; then
+	SPRW_GOSYNC_IPALLOW_RANGES=10.8.0.0/24,10.50.0.0/16,192.168.0.0/16,172.16.0.0/12,127.0.0.1/32
+fi
+if [ -z "$SPRW_GOSYNC_VERSION" ] || [[ "$SPRW_GOSYNC_VERSION" == *'!!'* ]]; then
+	SPRW_GOSYNC_VERSION=76745a639255f81c5a4a3d5093d6a3f0fa53f50e
+fi
+if [ -z "$SPRW_GOSYNC_REPO" ] || [[ "$SPRW_GOSYNC_REPO" == *'!!'* ]]; then
+	SPRW_GOSYNC_REPO=https://github.com/brave/go-sync.git
+fi
+if [ -z "$SPRW_GOSYNC_DYNAMODB_IMAGE" ] || [[ "$SPRW_GOSYNC_DYNAMODB_IMAGE" == *'!!'* ]]; then
+	SPRW_GOSYNC_DYNAMODB_IMAGE=amazon/dynamodb-local:3.3.2
+fi
+if [ -z "$SPRW_GOSYNC_AWSCLI_IMAGE" ] || [[ "$SPRW_GOSYNC_AWSCLI_IMAGE" == *'!!'* ]]; then
+	SPRW_GOSYNC_AWSCLI_IMAGE=amazon/aws-cli:2.40.4
+fi
+if [ -z "$SPRW_GOSYNC_REDIS_IMAGE" ] || [[ "$SPRW_GOSYNC_REDIS_IMAGE" == *'!!'* ]]; then
+	SPRW_GOSYNC_REDIS_IMAGE=redis:7.4.12-alpine
+fi
+if [ -z "$SPRW_GOSYNC_MEM_LIMIT" ] || [[ "$SPRW_GOSYNC_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_GOSYNC_MEM_LIMIT=128m
+fi
+if [ -z "$SPRW_GOSYNC_DYNAMODB_MEM_LIMIT" ] || [[ "$SPRW_GOSYNC_DYNAMODB_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_GOSYNC_DYNAMODB_MEM_LIMIT=384m
+fi
+if [ -z "$SPRW_GOSYNC_DYNAMODB_HEAP" ] || [[ "$SPRW_GOSYNC_DYNAMODB_HEAP" == *'!!'* ]]; then
+	SPRW_GOSYNC_DYNAMODB_HEAP=192
+fi
+if [ -z "$SPRW_GOSYNC_REDIS_MEM_LIMIT" ] || [[ "$SPRW_GOSYNC_REDIS_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_GOSYNC_REDIS_MEM_LIMIT=64m
+fi
+if [ -z "$SPRW_GOSYNC_TABLE_NAME" ] || [[ "$SPRW_GOSYNC_TABLE_NAME" == *'!!'* ]]; then
+	SPRW_GOSYNC_TABLE_NAME=client-entity
+fi
+if [ -z "$SPRW_GOSYNC_TIMEZONE" ] || [[ "$SPRW_GOSYNC_TIMEZONE" == *'!!'* ]]; then
+	SPRW_GOSYNC_TIMEZONE=Europe/Berlin
+fi
+
+# ------------------------------------------------------------------------------------------------
+# Bridge for app.sh: placeholders are resolved by their bare name.
+APPDOMAIN="$SPRW__APPDOMAIN"
+VOLUME_MODE="$SPRW__VOLUME_MODE"
+HTTP_REDIRECT="$SPRW__HTTP_REDIRECT"
+LETSENCRYPT_METHOD="$SPRW__LETSENCRYPT_METHOD"
+EXTERNAL_ACCESS="$SPRW__EXTERNAL_ACCESS"
+HOMER_LINK="$SPRW__HOMER_LINK"
+HOMER_NAME="$SPRW__HOMER_NAME"
+HOMER_ICON="$SPRW__HOMER_ICON"
+HOMER_GROUP="$SPRW__HOMER_GROUP"
+IPALLOW_RANGES="$SPRW_GOSYNC_IPALLOW_RANGES"
+GOSYNC_VERSION="$SPRW_GOSYNC_VERSION"
+GOSYNC_REPO="$SPRW_GOSYNC_REPO"
+DYNAMODB_IMAGE="$SPRW_GOSYNC_DYNAMODB_IMAGE"
+AWSCLI_IMAGE="$SPRW_GOSYNC_AWSCLI_IMAGE"
+REDIS_IMAGE="$SPRW_GOSYNC_REDIS_IMAGE"
+GOSYNC_MEM_LIMIT="$SPRW_GOSYNC_MEM_LIMIT"
+DYNAMODB_MEM_LIMIT="$SPRW_GOSYNC_DYNAMODB_MEM_LIMIT"
+DYNAMODB_HEAP="$SPRW_GOSYNC_DYNAMODB_HEAP"
+REDIS_MEM_LIMIT="$SPRW_GOSYNC_REDIS_MEM_LIMIT"
+TABLE_NAME="$SPRW_GOSYNC_TABLE_NAME"
+TIMEZONE="$SPRW_GOSYNC_TIMEZONE"
