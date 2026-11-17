@@ -1,0 +1,140 @@
+#!/bin/bash
+# Default variables for the app "joplin" (Joplin Server + PostgreSQL)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (one stack per customer; Joplin Server has its own multi-user accounts):
+#   app.sh joplin add <customer>
+#   app.sh joplin add <customer> --var APPDOMAIN=notes.example.com --var AUTH=ldap
+#
+# The stack is named joplin_c_<customer>.
+# First login: admin@localhost / admin - change e-mail and password immediately.
+#
+# Options (Jinja2 / Docusaurus buttons):
+#   SPRW_JOPLIN_AUTH:   plain (default) | ldap   (ldap needs the host app "ldap")
+#   SPRW_JOPLIN_SIGNUP: false (default) | true
+# Joplin Server has no OIDC; LDAP is the only external login.
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='joplin'
+SPRW__APP_PREFIX='JOPLIN'
+
+# Global environment variables that are used in the app's templates
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. notes.example.com
+
+# Global Jinja2 variables that are used in the app's templates
+SPRW__VOLUME_MODE='!!VOLUME_MODE!!'                 # bind, named_bind, or managed
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Homer dashboard tile (optional; app.sh default is HOMER_LINK=true)
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='Joplin'
+SPRW__HOMER_ICON='fas fa-sticky-note'
+SPRW__HOMER_GROUP='Apps'
+
+# App-specific variables (SPRW_JOPLIN_*)
+SPRW_JOPLIN_IMAGE='!!IMAGE!!'                       # joplin/server, ARM64-verified
+SPRW_JOPLIN_DB_IMAGE='!!DB_IMAGE!!'                 # PostgreSQL image (multi-arch)
+SPRW_JOPLIN_MEM_LIMIT='!!MEM_LIMIT!!'
+SPRW_JOPLIN_DB_MEM_LIMIT='!!DB_MEM_LIMIT!!'
+SPRW_JOPLIN_NODE_MAX_OLD_SPACE='!!NODE_MAX_OLD_SPACE!!'  # Node.js heap cap in MB
+SPRW_JOPLIN_TIMEZONE='!!TIMEZONE!!'
+SPRW_JOPLIN_RUN_UID='!!RUN_UID!!'                           # uid of the "joplin" user in the image (owner of the LDAP secret copy)
+SPRW_JOPLIN_SIGNUP='!!SIGNUP!!'                     # true | false
+SPRW_JOPLIN_INTERNAL_SOURCERANGE='!!INTERNAL_SOURCERANGE!!'  # EXTERNAL_ACCESS=false: allowed client networks
+SPRW_JOPLIN_AUTH='!!AUTH!!'                         # plain | ldap
+SPRW_JOPLIN_DB_NAME='!!DB_NAME!!'
+SPRW_JOPLIN_DB_USER='!!DB_USER!!'
+SPRW_JOPLIN_DB_PASSWORD="!!NEW_PASSWORD!!"
+
+# LDAP (used with AUTH=ldap). The bind password is NOT stored here; install.sh
+# copies the host read-only secret (LDAP_BIND_PW_FILE) into the data directory.
+SPRW_JOPLIN_LDAP_SERVER='!!LDAP_SERVER!!'           # ldap://<host>:389 on ldap-shared
+SPRW_JOPLIN_LDAP_SUFFIX='!!LDAP_SUFFIX!!'           # directory suffix (read from the host LDAP config if empty)
+SPRW_JOPLIN_LDAP_BIND_DN='!!LDAP_BIND_DN!!'         # read-only bind DN
+SPRW_JOPLIN_LDAP_BASE_DN='!!LDAP_BASE_DN!!'         # users of this customer: ou=people,o=<customer>,<suffix>
+SPRW_JOPLIN_LDAP_BIND_PW_FILE='!!LDAP_BIND_PW_FILE!!'
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
+if [ -z "$SPRW__APPDOMAIN" ] || [[ "$SPRW__APPDOMAIN" == *'!!'* ]]; then
+	SPRW__APPDOMAIN=joplin.${SPRW__DOMAIN:-example.com}
+fi
+
+if [ -z "$SPRW__VOLUME_MODE" ] || [[ "$SPRW__VOLUME_MODE" == *'!!'* ]]; then
+	SPRW__VOLUME_MODE=bind
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW__HOMER_LINK" ] || [[ "$SPRW__HOMER_LINK" == *'!!'* ]]; then
+	SPRW__HOMER_LINK=true
+fi
+
+if [ -z "$SPRW_JOPLIN_IMAGE" ] || [[ "$SPRW_JOPLIN_IMAGE" == *'!!'* ]]; then
+	SPRW_JOPLIN_IMAGE=joplin/server:3.7.6
+fi
+if [ -z "$SPRW_JOPLIN_DB_IMAGE" ] || [[ "$SPRW_JOPLIN_DB_IMAGE" == *'!!'* ]]; then
+	SPRW_JOPLIN_DB_IMAGE=postgres:17.12-alpine
+fi
+if [ -z "$SPRW_JOPLIN_MEM_LIMIT" ] || [[ "$SPRW_JOPLIN_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_JOPLIN_MEM_LIMIT=512m
+fi
+if [ -z "$SPRW_JOPLIN_DB_MEM_LIMIT" ] || [[ "$SPRW_JOPLIN_DB_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_JOPLIN_DB_MEM_LIMIT=256m
+fi
+if [ -z "$SPRW_JOPLIN_NODE_MAX_OLD_SPACE" ] || [[ "$SPRW_JOPLIN_NODE_MAX_OLD_SPACE" == *'!!'* ]]; then
+	SPRW_JOPLIN_NODE_MAX_OLD_SPACE=384
+fi
+if [ -z "$SPRW_JOPLIN_TIMEZONE" ] || [[ "$SPRW_JOPLIN_TIMEZONE" == *'!!'* ]]; then
+	SPRW_JOPLIN_TIMEZONE=Europe/Berlin
+fi
+if [ -z "$SPRW_JOPLIN_RUN_UID" ] || [[ "$SPRW_JOPLIN_RUN_UID" == *'!!'* ]]; then
+	SPRW_JOPLIN_RUN_UID=1001
+fi
+if [ -z "$SPRW_JOPLIN_SIGNUP" ] || [[ "$SPRW_JOPLIN_SIGNUP" == *'!!'* ]]; then
+	SPRW_JOPLIN_SIGNUP=false
+fi
+if [ -z "$SPRW_JOPLIN_INTERNAL_SOURCERANGE" ] || [[ "$SPRW_JOPLIN_INTERNAL_SOURCERANGE" == *'!!'* ]]; then
+	SPRW_JOPLIN_INTERNAL_SOURCERANGE=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.1/32
+fi
+if [ -z "$SPRW_JOPLIN_AUTH" ] || [[ "$SPRW_JOPLIN_AUTH" == *'!!'* ]]; then
+	SPRW_JOPLIN_AUTH=plain
+fi
+if [ -z "$SPRW_JOPLIN_DB_NAME" ] || [[ "$SPRW_JOPLIN_DB_NAME" == *'!!'* ]]; then
+	SPRW_JOPLIN_DB_NAME=joplin
+fi
+if [ -z "$SPRW_JOPLIN_DB_USER" ] || [[ "$SPRW_JOPLIN_DB_USER" == *'!!'* ]]; then
+	SPRW_JOPLIN_DB_USER=joplin
+fi
+if [ -z "$SPRW_JOPLIN_LDAP_SERVER" ] || [[ "$SPRW_JOPLIN_LDAP_SERVER" == *'!!'* ]]; then
+	SPRW_JOPLIN_LDAP_SERVER=ldap://ldap:389
+fi
+# Directory suffix: taken from the host LDAP app config if present (no secrets are read).
+# Helper (unbraced, not SPRW_*): app.sh expands ${VAR} / $SPRW_* in this file when it
+# is created, so derived defaults must not reference other SPRW_ variables.
+_ldap_sfx=$(sed -n "s/^SPRW_LDAP_BASE_DN=['\"]\{0,1\}\([^'\" #]*\).*/\1/p" /opt/docker-data/_host_/_config_/ldap.env 2>/dev/null | head -1)
+[ -n "$_ldap_sfx" ] || _ldap_sfx='dc=example,dc=com'
+if [ -z "$SPRW_JOPLIN_LDAP_SUFFIX" ] || [[ "$SPRW_JOPLIN_LDAP_SUFFIX" == *'!!'* ]]; then
+	SPRW_JOPLIN_LDAP_SUFFIX=$_ldap_sfx
+fi
+if [ -z "$SPRW_JOPLIN_LDAP_BIND_DN" ] || [[ "$SPRW_JOPLIN_LDAP_BIND_DN" == *'!!'* ]]; then
+	SPRW_JOPLIN_LDAP_BIND_DN=cn=readonly,ou=system,$_ldap_sfx
+fi
+if [ -z "$SPRW_JOPLIN_LDAP_BASE_DN" ] || [[ "$SPRW_JOPLIN_LDAP_BASE_DN" == *'!!'* ]]; then
+	SPRW_JOPLIN_LDAP_BASE_DN=ou=people,o=!!CUSTOMER!!,$_ldap_sfx
+fi
+unset _ldap_sfx
+if [ -z "$SPRW_JOPLIN_LDAP_BIND_PW_FILE" ] || [[ "$SPRW_JOPLIN_LDAP_BIND_PW_FILE" == *'!!'* ]]; then
+	SPRW_JOPLIN_LDAP_BIND_PW_FILE=/opt/docker-data/_host_/ldap/secrets/readonly.pw
+fi

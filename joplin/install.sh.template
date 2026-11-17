@@ -1,0 +1,41 @@
+#!/bin/bash
+# Prepare Joplin Server data directories and networks. Do not print secrets.
+set -euo pipefail
+
+SPRW__CUSTOMER="!!CUSTOMER!!"
+SPRW__APPDOMAIN="!!APPDOMAIN!!"
+SPRW__DATA_DIR="!!DATA_DIR!!"
+SPRW__COMPOSE_DIR="!!COMPOSE_DIR!!"
+JOPLIN_UID="!!RUN_UID!!"
+LDAP_BIND_PW_FILE="!!LDAP_BIND_PW_FILE!!"
+
+echo "Installing Joplin Server for ${SPRW__CUSTOMER} (${SPRW__APPDOMAIN})..."
+
+mkdir -p "$SPRW__COMPOSE_DIR"
+mkdir -p "$SPRW__DATA_DIR/postgres"
+
+# shellcheck source=/opt/docker/_scripts_/ensure-networks.sh
+source /opt/docker/_scripts_/ensure-networks.sh
+ensure_shared_networks
+ensure_customer_network "$SPRW__CUSTOMER"
+
+# postgres:alpine runs as postgres (uid 70).
+chown -R 70:70 "$SPRW__DATA_DIR/postgres"
+{%- if SPRW_JOPLIN_AUTH == "ldap" %}
+
+# The bind password is copied, never printed, and never written into .env/Komodo.
+if [ ! -s "$LDAP_BIND_PW_FILE" ]; then
+    echo "ERROR: AUTH=ldap but the read-only bind secret is missing: $LDAP_BIND_PW_FILE" >&2
+    exit 1
+fi
+install -d -m 700 -o "$JOPLIN_UID" -g "$JOPLIN_UID" "$SPRW__DATA_DIR/secrets"
+install -m 400 -o "$JOPLIN_UID" -g "$JOPLIN_UID" "$LDAP_BIND_PW_FILE" "$SPRW__DATA_DIR/secrets/ldap-readonly.pw"
+{%- endif %}
+
+echo "Installation finished."
+echo "Joplin Server URL: https://${SPRW__APPDOMAIN}"
+echo "Data directory: ${SPRW__DATA_DIR}"
+echo "First login: admin@localhost / admin - change e-mail and password right away."
+{%- if SPRW_JOPLIN_AUTH == "ldap" %}
+echo "LDAP: users log in with the e-mail address stored in LDAP (attribute mail); accounts are created on first login."
+{%- endif %}

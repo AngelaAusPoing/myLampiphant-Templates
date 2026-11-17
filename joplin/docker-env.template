@@ -1,0 +1,28 @@
+# === Stack variables (SPRW__*) ===
+# This file is sent to Komodo as the stack .env. Generated secrets belong here
+# and must not be committed. The LDAP bind password is never written here.
+SPRW__CUSTOMER=!!CUSTOMER!!
+SPRW__APPDOMAIN=!!APPDOMAIN!!
+SPRW__STACKNAME=!!STACKNAME!!
+
+# === Images and limits (defaults; override in persistent config) ===
+SPRW_JOPLIN_IMAGE=joplin/server:3.7.6
+SPRW_JOPLIN_DB_IMAGE=postgres:17.12-alpine
+SPRW_JOPLIN_MEM_LIMIT=512m
+SPRW_JOPLIN_DB_MEM_LIMIT=256m
+SPRW_JOPLIN_NODE_MAX_OLD_SPACE=384
+SPRW_JOPLIN_TIMEZONE=Europe/Berlin
+
+# === Access ===
+SPRW_JOPLIN_SIGNUP=!!SIGNUP!!
+SPRW_JOPLIN_INTERNAL_SOURCERANGE=!!INTERNAL_SOURCERANGE!!
+
+# === Database ===
+SPRW_JOPLIN_DB_NAME=joplin
+SPRW_JOPLIN_DB_USER=joplin
+SPRW_JOPLIN_DB_PASSWORD=!!DB_PASSWORD!!
+
+# === LDAP (only used with AUTH=ldap; no password here) ===
+SPRW_JOPLIN_LDAP_SERVER=!!LDAP_SERVER!!
+SPRW_JOPLIN_LDAP_BASE_DN=!!LDAP_BASE_DN!!
+SPRW_JOPLIN_LDAP_BIND_DN=!!LDAP_BIND_DN!!
