@@ -61,8 +61,10 @@ services:
       # No init wrapper: create the database in the Odoo web UI.
     {%- endif %}
     environment:
-      # Read by the image entrypoint (database connection)
-      - HOST=db
+      # Read by the image entrypoint (database connection). Use the unique
+      # container name, not the service name "db": customer-net may contain
+      # other stacks' "db" services (DNS alias collision).
+      - HOST=${SPRW__STACKNAME:-odoo_c_customer_directory}_db
       - PORT=5432
       - USER=${SPRW_ODOO_DB_USER:-odoo}
       - PASSWORD=${SPRW_ODOO_DB_PASSWORD}
