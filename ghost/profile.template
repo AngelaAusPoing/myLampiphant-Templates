@@ -55,6 +55,10 @@ SPRW_GHOST_MAIL_USER='!!MAIL_USER!!'
 SPRW_GHOST_MAIL_PASSWORD='!!MAIL_PASSWORD!!'
 SPRW_GHOST_MAIL_FROM='!!MAIL_FROM!!'
 
+# Staff device verification: Ghost mails a code on login from a new device.
+# true (Ghost default) or false (no e-mail code; e.g. while no mail transport works).
+SPRW_GHOST_STAFF_DEVICE_VERIFICATION='!!STAFF_DEVICE_VERIFICATION!!'
+
 # ------------------------------------------------------------------------------------------------
 # Do not manually edit the lines below, replace the !!PLACEHOLDERS!! above instead.
 if [ -z "$SPRW__APPDOMAIN" ] || [ "$SPRW__APPDOMAIN" = '!!APPDOMAIN!!' ]; then
@@ -123,4 +127,7 @@ if [ -z "$SPRW_GHOST_MAIL_REQUIRE_TLS" ] || [ "$SPRW_GHOST_MAIL_REQUIRE_TLS" = '
 fi
 if [ -z "$SPRW_GHOST_MAIL_FROM" ] || [ "$SPRW_GHOST_MAIL_FROM" = '!!MAIL_FROM!!' ]; then
 	SPRW_GHOST_MAIL_FROM="Ghost <noreply@${SPRW__APPDOMAIN}>"
+fi
+if [ -z "$SPRW_GHOST_STAFF_DEVICE_VERIFICATION" ] || [ "$SPRW_GHOST_STAFF_DEVICE_VERIFICATION" = '!!STAFF_DEVICE_VERIFICATION!!' ]; then
+	SPRW_GHOST_STAFF_DEVICE_VERIFICATION=true
 fi

@@ -71,6 +71,7 @@ services:
       - database__connection__user=${SPRW_GHOST_DB_USER:-ghost}
       - database__connection__password=${SPRW_GHOST_DB_PASSWORD}
       - database__connection__database=${SPRW_GHOST_DB_NAME:-ghost}
+      - security__staffDeviceVerification=${SPRW_GHOST_STAFF_DEVICE_VERIFICATION:-true}
       {%- if SPRW_GHOST_MAIL_ENABLED == "true" %}
       - mail__transport=SMTP
       - mail__options__host=${SPRW_GHOST_MAIL_HOST}
