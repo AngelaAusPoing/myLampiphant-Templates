@@ -1,0 +1,13 @@
+# === App variables (diagramsnet) ===
+# This file is sent to Komodo as the stack .env. No passwords, keys or tokens belong here.
+APPDOMAIN=!!APPDOMAIN!!
+CUSTOMER=!!CUSTOMER!!
+STACKNAME=!!STACKNAME!!
+
+# === diagramsnet (non-secret) ===
+DIAGRAMSNET_IMAGE=!!DIAGRAMSNET_IMAGE!!
+DIAGRAMSNET_MEM_LIMIT=!!DIAGRAMSNET_MEM_LIMIT!!
+JAVA_MAX_HEAP=!!JAVA_MAX_HEAP!!
+TIMEZONE=!!TIMEZONE!!
+AUTH_PROTECT=!!AUTH_PROTECT!!
+IPALLOW_RANGES=!!IPALLOW_RANGES!!

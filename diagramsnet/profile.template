@@ -1,0 +1,103 @@
+#!/bin/bash
+# Default variables for the app "diagramsnet" (draw.io / diagrams.net web editor)
+#
+# This file is generated ONCE into /opt/docker-data/<customer>/_config_/<app_dir>.env
+# and then kept (persistent config). Change values there, not in the generated
+# compose/.env files.
+#
+# Install (one stack per customer):
+#   app.sh diagramsnet add <customer>
+#   app.sh diagramsnet add <customer> --var APPDOMAIN=draw.example.com
+#   app.sh diagramsnet add <customer> --var AUTH_PROTECT=true
+#
+# The stack is named diagramsnet_c_<customer>.
+#
+# draw.io keeps no server-side data: diagrams are saved by the browser (device,
+# download) or in the storage the user picks. That is why this app has no
+# data volume and no VOLUME_MODE option.
+#
+# Options (Jinja2 / Docusaurus buttons):
+#   AUTH_PROTECT:    false (default) | true  - Traefik ForwardAuth via the host Authelia (LDAP users)
+#   EXTERNAL_ACCESS: true (default)  | false - false = only VPN/LAN source ranges (IPALLOW_RANGES)
+
+# The following variables are read by app.sh
+SPRW__APP_NAME='diagramsnet'
+SPRW__APP_PREFIX='DIAGRAMSNET'
+
+# Global (customer/domain-specific values are !!PLACEHOLDER!!, filled by app.sh)
+SPRW__APPDOMAIN='!!APPDOMAIN!!'                     # e.g. draw.example.com
+SPRW__HTTP_REDIRECT='!!HTTP_REDIRECT!!'             # true or false (HTTP→HTTPS)
+SPRW__LETSENCRYPT_METHOD='!!LETSENCRYPT_METHOD!!'   # acme or dns01
+SPRW__EXTERNAL_ACCESS='!!EXTERNAL_ACCESS!!'         # true or false
+
+# Homer dashboard tile (optional; app.sh default is HOMER_LINK=true)
+SPRW__HOMER_LINK='!!HOMER_LINK!!'
+SPRW__HOMER_NAME='draw.io'
+SPRW__HOMER_ICON='fas fa-project-diagram'
+SPRW__HOMER_GROUP='Apps'
+
+# Optional Traefik ForwardAuth via the host Authelia stack (middleware authelia@docker).
+# draw.io has no user accounts of its own, so LDAP users can only be enforced this way.
+# Requires the host app "authelia" to be running.
+SPRW_DIAGRAMSNET_AUTH_PROTECT='!!AUTH_PROTECT!!'
+# Source ranges allowed when EXTERNAL_ACCESS=false (comma-separated CIDRs)
+SPRW_DIAGRAMSNET_IPALLOW_RANGES='!!IPALLOW_RANGES!!'
+
+# App-specific defaults (official image, ARM64 verified; pin, do not use latest)
+SPRW_DIAGRAMSNET_IMAGE='!!DIAGRAMSNET_IMAGE!!'
+SPRW_DIAGRAMSNET_MEM_LIMIT='!!DIAGRAMSNET_MEM_LIMIT!!'   # compose mem_limit
+SPRW_DIAGRAMSNET_JAVA_MAX_HEAP='!!JAVA_MAX_HEAP!!'       # Tomcat JVM max heap in MB (-Xmx)
+SPRW_DIAGRAMSNET_TIMEZONE='!!TIMEZONE!!'
+
+# ------------------------------------------------------------------------------------------------
+# Do not manually edit the lines below, change the values above instead (defaults for empty values).
+if [ -z "$SPRW__APPDOMAIN" ] || [[ "$SPRW__APPDOMAIN" == *'!!'* ]]; then
+	SPRW__APPDOMAIN=draw.${SPRW__DOMAIN:-example.com}
+fi
+if [ -z "$SPRW__HTTP_REDIRECT" ] || [[ "$SPRW__HTTP_REDIRECT" == *'!!'* ]]; then
+	SPRW__HTTP_REDIRECT=true
+fi
+if [ -z "$SPRW__LETSENCRYPT_METHOD" ] || [[ "$SPRW__LETSENCRYPT_METHOD" == *'!!'* ]]; then
+	SPRW__LETSENCRYPT_METHOD=acme
+fi
+if [ -z "$SPRW__EXTERNAL_ACCESS" ] || [[ "$SPRW__EXTERNAL_ACCESS" == *'!!'* ]]; then
+	SPRW__EXTERNAL_ACCESS=true
+fi
+if [ -z "$SPRW__HOMER_LINK" ] || [[ "$SPRW__HOMER_LINK" == *'!!'* ]]; then
+	SPRW__HOMER_LINK=true
+fi
+if [ -z "$SPRW_DIAGRAMSNET_AUTH_PROTECT" ] || [[ "$SPRW_DIAGRAMSNET_AUTH_PROTECT" == *'!!'* ]]; then
+	SPRW_DIAGRAMSNET_AUTH_PROTECT=false
+fi
+if [ -z "$SPRW_DIAGRAMSNET_IPALLOW_RANGES" ] || [[ "$SPRW_DIAGRAMSNET_IPALLOW_RANGES" == *'!!'* ]]; then
+	SPRW_DIAGRAMSNET_IPALLOW_RANGES=10.8.0.0/24,10.50.0.0/16,192.168.0.0/16,172.16.0.0/12,127.0.0.1/32
+fi
+if [ -z "$SPRW_DIAGRAMSNET_IMAGE" ] || [[ "$SPRW_DIAGRAMSNET_IMAGE" == *'!!'* ]]; then
+	SPRW_DIAGRAMSNET_IMAGE=jgraph/drawio:32.6.10
+fi
+if [ -z "$SPRW_DIAGRAMSNET_MEM_LIMIT" ] || [[ "$SPRW_DIAGRAMSNET_MEM_LIMIT" == *'!!'* ]]; then
+	SPRW_DIAGRAMSNET_MEM_LIMIT=448m
+fi
+if [ -z "$SPRW_DIAGRAMSNET_JAVA_MAX_HEAP" ] || [[ "$SPRW_DIAGRAMSNET_JAVA_MAX_HEAP" == *'!!'* ]]; then
+	SPRW_DIAGRAMSNET_JAVA_MAX_HEAP=256
+fi
+if [ -z "$SPRW_DIAGRAMSNET_TIMEZONE" ] || [[ "$SPRW_DIAGRAMSNET_TIMEZONE" == *'!!'* ]]; then
+	SPRW_DIAGRAMSNET_TIMEZONE=Europe/Berlin
+fi
+
+# ------------------------------------------------------------------------------------------------
+# Bridge for app.sh: placeholders are resolved by their bare name.
+APPDOMAIN="$SPRW__APPDOMAIN"
+HTTP_REDIRECT="$SPRW__HTTP_REDIRECT"
+LETSENCRYPT_METHOD="$SPRW__LETSENCRYPT_METHOD"
+EXTERNAL_ACCESS="$SPRW__EXTERNAL_ACCESS"
+HOMER_LINK="$SPRW__HOMER_LINK"
+HOMER_NAME="$SPRW__HOMER_NAME"
+HOMER_ICON="$SPRW__HOMER_ICON"
+HOMER_GROUP="$SPRW__HOMER_GROUP"
+AUTH_PROTECT="$SPRW_DIAGRAMSNET_AUTH_PROTECT"
+IPALLOW_RANGES="$SPRW_DIAGRAMSNET_IPALLOW_RANGES"
+DIAGRAMSNET_IMAGE="$SPRW_DIAGRAMSNET_IMAGE"
+DIAGRAMSNET_MEM_LIMIT="$SPRW_DIAGRAMSNET_MEM_LIMIT"
+JAVA_MAX_HEAP="$SPRW_DIAGRAMSNET_JAVA_MAX_HEAP"
+TIMEZONE="$SPRW_DIAGRAMSNET_TIMEZONE"
